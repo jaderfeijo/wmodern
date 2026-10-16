@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# webapp -- turn a website into an application-launcher entry that opens it in a Chromium "app" window
+# (no tabs, no address bar, its own window class). Usage: webapp --help
+set -euo pipefail
+
+DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
+APPS="$DATA/applications"
+ICONS="$DATA/icons/hicolor/256x256/apps"
+MARK="X-Webapp-Source=chromium-app"      # tags the entries this script made, so list/remove touch only those
+
+die() { echo "webapp: $*" >&2; exit 1; }
+
+browser() {
+  for b in "${WEBAPP_BROWSER:-}" chromium chromium-browser google-chrome google-chrome-stable brave-browser microsoft-edge; do
+    [ -n "$b" ] && command -v "$b" >/dev/null 2>&1 && { echo "$b"; return; }
+  done
+  die "no Chromium-family browser found (try: sudo apt install chromium)"
+}
+
+slug() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^[:alnum:]]\+/-/g; s/^-//; s/-$//'; }
+
+# Chromium names the window of "--app=URL" chrome-<host>__<path>-Default (slashes become underscores). Putting that in
+# StartupWMClass lets taskbars and docks tie the window to the launcher entry and its icon.
+window_class() {
+  local a=${1#*://}; a=${a%%[?#]*}
+  local host=${a%%/*}
+  local path=${a:${#host}}
+  host=${host##*@}; host=${host%%:*}
+  printf 'chrome-%s_%s-Default' "${host,,}" "${path:-/}" | sed 's|/|_|g'
+}
+
+fetch() { curl -fsSL --max-time 10 -o "$2" "$1" 2>/dev/null && [ -s "$2" ] && [[ $(file -b --mime-type "$2") == image/* ]]; }
+
+# The site's own icon: apple-touch-icon (180px or more), then the well-known path, then Google's favicon service.
+site_icon() {
+  local url=$1 dest=$2 origin page href
+  origin=$(sed -E 's|^(https?://[^/]+).*|\1|' <<<"$url")
+  page=$(curl -fsSL --max-time 5 "$url" 2>/dev/null | head -c 100000 | tr '\n' ' ' || true)
+  href=$(grep -oiE "<link[^>]*rel=[\"'][^\"']*apple-touch-icon[^\"']*[\"'][^>]*>" <<<"$page" | grep -oiE "href=[\"'][^\"']+" | head -1 | sed -E "s/^href=[\"']//" || true)
+  case $href in http://*|https://*) ;; //*) href="https:$href" ;; /*) href="$origin$href" ;; ?*) href="$origin/$href" ;; esac
+  { [ -n "$href" ] && fetch "$href" "$dest"; } || fetch "$origin/apple-touch-icon.png" "$dest" \
+    || fetch "https://www.google.com/s2/favicons?domain=$origin&sz=256" "$dest"
+}
+
+# Values written to a .desktop file must not contain a newline (it would start a new key such as a second Exec=).
+esc() { local v=$1; v=${v//\\/\\\\}; v=${v//$'\t'/\\t}; v=${v//$'\r'/\\r}; v=${v//$'\n'/\\n}; printf '%s' "$v"; }
+
+cmd_add() {
+  local name=${1:-} url=${2:-} icon=${3:-}
+  [ -n "$name" ] && [ -n "$url" ] || die "usage: webapp add NAME URL [ICON-FILE-OR-URL]"
+  [[ $name != */* ]] || die "the name cannot contain '/': $name"
+  [[ $url =~ ^[a-zA-Z][a-zA-Z0-9+.-]*: ]] || url="https://$url"
+  [[ ${url,,} =~ ^https?:// ]] || die "the address must be http or https (Chromium would run javascript:, file: and data: addresses)"
+  [[ ! $url =~ [[:space:]] ]] || die "the address must not contain spaces"
+  local b; b=$(browser)
+  mkdir -p "$APPS" "$ICONS"
+  local ic; ic=$(slug "$name"); [ -n "$ic" ] || ic=webapp
+  if [ -z "$icon" ]; then
+    site_icon "$url" "$ICONS/$ic.png" || { echo "webapp: could not fetch an icon; using a generic one (pass an icon file or URL as the third argument)" >&2; ic=web-browser; }
+  elif [[ $icon =~ ^https?:// ]]; then fetch "$icon" "$ICONS/$ic.png" || die "could not download the icon"
+  elif [ -f "$icon" ]; then cp "$icon" "$ICONS/$ic.png"
+  else ic=$icon; fi        # an icon theme name
+  local q=${url//\\/\\\\}; q=${q//\"/\\\"}; q=${q//\`/\\\`}; q=${q//\$/\\\$}; q=${q//%/%%}
+  local f="$APPS/$name.desktop"
+  [ ! -e "$f" ] || grep -qx "$MARK" "$f" || die "$f exists and was not made by webapp; pick another name"
+  cat >"$f" <<DESK
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=$(esc "$name")
+Exec=$(esc "$b --app=\"$q\"")
+Icon=$(esc "$ic")
+Terminal=false
+StartupNotify=true
+StartupWMClass=$(esc "$(window_class "$url")")
+$MARK
+DESK
+  chmod +x "$f"
+  update-desktop-database "$APPS" >/dev/null 2>&1 || true
+  gtk-update-icon-cache -q "$DATA/icons/hicolor" >/dev/null 2>&1 || true
+  echo "Added \"$name\" ($url). Find it in your application launcher."
+}
+
+cmd_list() {
+  local f
+  for f in "$APPS"/*.desktop; do
+    [ -f "$f" ] && grep -qx "$MARK" "$f" && basename "$f" .desktop
+  done | sort || true
+}
+
+cmd_remove() {
+  local name=${1:-} f
+  [ -n "$name" ] || die "usage: webapp remove NAME"
+  f="$APPS/$name.desktop"
+  [ -f "$f" ] && grep -qx "$MARK" "$f" || die "no web app called \"$name\" made by webapp (see: webapp list)"
+  local ic; ic=$(sed -n 's/^Icon=//p' "$f" | head -1)
+  rm -- "$f"
+  [ "$ic" = "$(slug "$name")" ] && rm -f -- "$ICONS/$ic.png"
+  update-desktop-database "$APPS" >/dev/null 2>&1 || true
+  echo "Removed \"$name\"."
+}
+
+case ${1:-} in
+  add)    shift; cmd_add "$@" ;;
+  remove) shift; cmd_remove "$@" ;;
+  list)   cmd_list ;;
+  ""|-h|--help|help)
+    cat <<USAGE
+Usage: webapp add NAME URL [ICON]    make a launcher entry that opens URL in a Chromium app window
+       webapp remove NAME            remove an entry made by this script
+       webapp list                   list the entries made by this script
+ICON is optional: an image file, an image URL or an icon theme name. Without it the site's own icon is fetched.
+Set WEBAPP_BROWSER to use a particular browser (default: the first of chromium, google-chrome, brave-browser ...).
+USAGE
+    ;;
+  *) die "unknown command: $1 (see webapp --help)" ;;
+esac

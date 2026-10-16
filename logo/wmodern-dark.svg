@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 454 100" width="409" height="90" role="img" aria-label="wmodern">
+<title>wmodern</title>
+<g fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+<path d="M0,30 L13,80 L26,46 L39,80 L52,30" transform="translate(12 0)" stroke="#e0192b"/>
+<path d="M0,30 V80 M0,52 C0,30 32,30 32,52 V80 M32,52 C32,30 64,30 64,52 V80" transform="translate(80 0)" stroke="#e0192b"/>
+<path d="M24,30 A22,25 0 1 0 24,80 A22,25 0 1 0 24,30 Z" transform="translate(160 0)" stroke="#f3f3f3"/>
+<path d="M24,30 A22,25 0 1 0 24,80 A22,25 0 1 0 24,30 Z M46,8 V80" transform="translate(224 0)" stroke="#f3f3f3"/>
+<path d="M2,55 H46 A22,25 0 1 0 38,73" transform="translate(288 0)" stroke="#f3f3f3"/>
+<path d="M0,30 V80 M0,54 C0,34 14,30 28,31" transform="translate(352 0)" stroke="#f3f3f3"/>
+<path d="M0,30 V80 M0,52 C0,30 44,30 44,52 V80" transform="translate(398 0)" stroke="#f3f3f3"/>
+</g>
+</svg>

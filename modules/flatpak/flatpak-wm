@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# flatpak-wm -- make Flatpak apps and their sign-in links (slack://, zoommtg://, ...) work from a bare window-manager session.
+# Usage: flatpak-wm --help
+set -euo pipefail
+
+SYS=/var/lib/flatpak/exports/share
+USR="${XDG_DATA_HOME:-$HOME/.local/share}/flatpak/exports/share"
+RC="$HOME/.xsessionrc"
+NAME=flatpak-wm
+die() { echo "flatpak-wm: $*" >&2; exit 1; }
+in_path() { case ":$1:" in *":$2:"*|*":$2/:"*) return 0 ;; esac; return 1; }
+
+# XDG_DATA_DIRS of this shell and of the running session's window manager (what programs started from it inherit).
+wm_dirs() {
+  local pid; pid=$(pgrep -xo -u "$(id -u)" 'wmaker|WindowMaker' 2>/dev/null || true)
+  [ -n "$pid" ] && [ -r "/proc/$pid/environ" ] && tr '\0' '\n' <"/proc/$pid/environ" | sed -n 's/^XDG_DATA_DIRS=//p' || true
+}
+
+cmd_check() {
+  local ok=0 dir here wm
+  here=${XDG_DATA_DIRS:-}; wm=$(wm_dirs)
+  command -v flatpak >/dev/null || die "flatpak is not installed (sudo apt install flatpak)"
+  echo "Flatpak export directories, and whether they are in XDG_DATA_DIRS:"
+  for dir in "$SYS" "$USR"; do
+    [ -d "$dir" ] || { echo "  $dir   (does not exist: nothing installed there)"; continue; }
+    printf '  %s   this shell: %s' "$dir" "$(in_path "$here" "$dir" && echo yes || echo NO)"
+    if [ -n "$wm" ]; then
+      printf '   window manager session: %s\n' "$(in_path "$wm" "$dir" && echo yes || { echo NO; ok=1; })"
+    else echo; fi
+  done
+  if [ "$ok" = 1 ]; then
+    echo; echo "The session was started without them (Flatpak installed after you logged in, or a session script that does not add them)."
+    echo "Launchers and sign-in links started from it cannot see Flatpak apps. Fix for future logins:  flatpak-wm fix"
+  else echo; echo "Looks fine."; fi
+  return 0
+}
+
+cmd_fix() {
+  local dry=${1:-}
+  local tmp; tmp=$(mktemp); trap 'rm -f "$tmp"' RETURN
+  cat >"$tmp" <<'BLOCK'
+# Make Flatpak apps visible to launchers and URL handlers in this X session
+for d in /var/lib/flatpak/exports/share "${XDG_DATA_HOME:-$HOME/.local/share}/flatpak/exports/share"; do
+  case ":${XDG_DATA_DIRS:-}:" in *":$d:"*) ;; *) XDG_DATA_DIRS="${XDG_DATA_DIRS:-/usr/local/share:/usr/share}:$d" ;; esac
+done
+export XDG_DATA_DIRS
+BLOCK
+  if [ "$dry" = --dry-run ]; then echo "[dry-run] would add to $RC:"; sed 's/^/    /' "$tmp"; return 0; fi
+  python3 - "$RC" "$tmp" "$NAME" <<'PY'
+import os, re, sys
+path, content, name = sys.argv[1:4]
+b, e = f"# >>> {name} >>>", f"# <<< {name} <<<"
+t = open(path).read() if os.path.exists(path) else ""
+t = re.sub(r"(?ms)^" + re.escape(b) + r"\n.*?^" + re.escape(e) + r"\n?", "", t).rstrip("\n")
+open(path, "w").write((t + "\n\n" if t else "") + f"{b}\n{open(content).read().rstrip()}\n{e}\n")
+PY
+  echo "Added to $RC. Log out and in once; until then, start launchers with:  flatpak-wm env <command>"
+}
+
+# Run a command with the Flatpak directories added: works right now, without logging in again.
+cmd_env() {
+  [ $# -gt 0 ] || die "usage: flatpak-wm env COMMAND [ARGS...]"
+  local d; for d in "$SYS" "$USR"; do in_path "${XDG_DATA_DIRS:-}" "$d" || XDG_DATA_DIRS="${XDG_DATA_DIRS:-/usr/local/share:/usr/share}:$d"; done
+  export XDG_DATA_DIRS; exec "$@"
+}
+
+# Register a Flatpak app as the handler of a URL scheme, e.g.  flatpak-wm handler slack
+cmd_handler() {
+  local scheme=${1:-} app=${2:-} dir f
+  [[ $scheme =~ ^[a-z][a-z0-9+.-]*$ ]] || die "usage: flatpak-wm handler SCHEME [APP.desktop]   (scheme such as slack, zoommtg, msteams)"
+  if [ -z "$app" ]; then
+    local found=()
+    for dir in "$SYS" "$USR"; do
+      for f in "$dir"/applications/*.desktop; do
+        [ -f "$f" ] && grep -qE "^MimeType=.*x-scheme-handler/$scheme(;|$)" "$f" && found+=("$(basename "$f")")
+      done
+    done
+    [ "${#found[@]}" -gt 0 ] || die "no installed Flatpak app declares x-scheme-handler/$scheme"
+    [ "${#found[@]}" -eq 1 ] || die "several apps handle it (${found[*]}); name one: flatpak-wm handler $scheme APP.desktop"
+    app=${found[0]}
+  fi
+  xdg-mime default "$app" "x-scheme-handler/$scheme"
+  echo "x-scheme-handler/$scheme -> $(xdg-mime query default "x-scheme-handler/$scheme")"
+}
+
+case ${1:-} in
+  check) cmd_check ;;
+  fix) shift; cmd_fix "${1:-}" ;;
+  env) shift; cmd_env "$@" ;;
+  handler) shift; cmd_handler "$@" ;;
+  ""|-h|--help|help)
+    cat <<USAGE
+Usage: flatpak-wm check                  are the Flatpak directories in XDG_DATA_DIRS (here, and in the running session)?
+       flatpak-wm fix [--dry-run]        add them for every future login (a marked block in ~/.xsessionrc)
+       flatpak-wm env COMMAND...         run COMMAND with them added, right now
+       flatpak-wm handler SCHEME [APP]   make a Flatpak app the handler of slack://, zoommtg://, ... links
+USAGE
+    ;;
+  *) die "unknown command: $1" ;;
+esac

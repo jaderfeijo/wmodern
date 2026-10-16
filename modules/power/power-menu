@@ -1,0 +1,14 @@
+#!/bin/sh
+# power-menu: a rofi menu with the usual power actions.
+#   ROFI                the rofi command (default: rofi)
+#   POWER_MENU_LOGOUT   command that ends the session (default: ask Window Maker to exit cleanly)
+ROFI=${ROFI:-rofi}
+LOGOUT=${POWER_MENU_LOGOUT:-pkill -TERM -x wmaker}
+choice=$(printf '%s\n' "Lock" "Suspend" "Log out" "Restart" "Shut down" | $ROFI -dmenu -i -p power -lines 5 -no-custom) || exit 0
+case "$choice" in
+  Lock)        loginctl lock-session ;;
+  Suspend)     systemctl suspend ;;
+  "Log out")   sh -c "$LOGOUT" ;;
+  Restart)     systemctl reboot ;;
+  "Shut down") systemctl poweroff ;;
+esac

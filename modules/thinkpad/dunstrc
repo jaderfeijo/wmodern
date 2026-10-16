@@ -1,0 +1,26 @@
+[global]
+    origin = bottom-center
+    offset = (0, 90)
+    width = (240, 300)
+    font = Sans 11
+    progress_bar = true
+    progress_bar_height = 14
+    progress_bar_frame_width = 1
+    progress_bar_min_width = 200
+    progress_bar_max_width = 280
+    frame_width = 1
+    corner_radius = 8
+    padding = 12
+    horizontal_padding = 16
+    follow = keyboard
+
+# Volume / brightness / mic pop-ups sent by the osd script
+[osd]
+    appname = "osd"
+    format = "<b>%s</b>  %b"
+    timeout = 1.5
+    history_ignore = yes
+    background = "#222222"
+    foreground = "#ffffff"
+    highlight = "#D97757"
+    frame_color = "#555555"

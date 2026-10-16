@@ -1,0 +1,29 @@
+#!/bin/sh
+# power-menu-listener: runs in your session; opens (or, if it is already open, closes) the power menu whenever
+# something writes to its FIFO. acpid does that when the power button is pressed (see acpi-power-menu.sh).
+#
+# One physical press makes the firmware send TWO ACPI events about 90 ms apart, so events within 400 ms of the
+# previous one are ignored; otherwise the second event would close the menu the first one just opened.
+RUN="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+FIFO="$RUN/power-menu.fifo"
+PIDFILE="$RUN/power-menu-listener.pid"
+DIR=$(dirname "$(readlink -f "$0")")
+MENU="${POWER_MENU:-$DIR/power-menu}"
+PROC="${POWER_MENU_PROC:-rofi}"                  # process name of the menu, to close it on the second press
+
+# replace a previous copy of ourselves instead of leaving it orphaned on a deleted FIFO
+if [ -f "$PIDFILE" ]; then
+  old=$(cat "$PIDFILE" 2>/dev/null)
+  grep -aq power-menu-listener "/proc/$old/cmdline" 2>/dev/null && kill "$old" 2>/dev/null
+fi
+echo $$ > "$PIDFILE"
+
+rm -f "$FIFO"; mkfifo -m 622 "$FIFO" || exit 1
+last=0
+while :; do
+  read -r _ < "$FIFO"
+  now=$(date +%s%3N)
+  [ $((now - last)) -lt 400 ] && continue
+  last=$now
+  pkill -x "$PROC" || "$MENU" &
+done

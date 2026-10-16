@@ -1,0 +1,32 @@
+#!/bin/bash
+# osd ACTION : change the volume / microphone / brightness, then show a pop-up bar (dunst).
+#   ACTION = volume-up | volume-down | mute | mic-mute | brightness-up | brightness-down
+# Needs: wpctl (WirePlumber / PipeWire), brightnessctl, notify-send (libnotify-bin) and a running dunst.
+SINK=@DEFAULT_AUDIO_SINK@
+SOURCE=@DEFAULT_AUDIO_SOURCE@
+STEP=${OSD_STEP:-5}                       # percent per key press
+
+# show LABEL [PERCENT] [TEXT]  -- one pop-up; the stack tag makes a new one replace the previous one
+show() {
+  local args=(-a osd -h string:x-dunst-stack-tag:osd -t 1500)
+  [ -n "${2:-}" ] && args+=(-h "int:value:$2")
+  notify-send "${args[@]}" "$1" "${3:-${2:+$2%}}"
+}
+
+show_volume() {
+  local out; out=$(wpctl get-volume "$SINK")
+  if grep -q MUTED <<<"$out"; then show Volume 0 muted
+  else show Volume "$(awk '{printf "%d", $2 * 100 + 0.5}' <<<"$out")"; fi
+}
+
+case "${1:-}" in
+  volume-up)       wpctl set-mute "$SINK" 0; wpctl set-volume -l 1.0 "$SINK" "${STEP}%+"; show_volume ;;
+  volume-down)     wpctl set-mute "$SINK" 0; wpctl set-volume "$SINK" "${STEP}%-"; show_volume ;;
+  mute)            wpctl set-mute "$SINK" toggle; show_volume ;;
+  mic-mute)
+    wpctl set-mute "$SOURCE" toggle
+    if wpctl get-volume "$SOURCE" | grep -q MUTED; then show Microphone "" muted; else show Microphone "" on; fi ;;
+  brightness-up)   brightnessctl -q set "${STEP}%+";  show Brightness "$(brightnessctl -m | cut -d, -f4 | tr -d %)" ;;
+  brightness-down) brightnessctl -q set "${STEP}%-";  show Brightness "$(brightnessctl -m | cut -d, -f4 | tr -d %)" ;;
+  *) echo "usage: osd volume-up|volume-down|mute|mic-mute|brightness-up|brightness-down" >&2; exit 1 ;;
+esac
