@@ -22,6 +22,14 @@ RaiseDelay = 1;
 
 For the default behaviour again: `FocusMode = manual;` and `RaiseDelay = 0;`.
 
+## Hold Super to pause it
+
+While you hold **Super** (either one), moving the mouse no longer changes the focus or raises windows; let go and
+it follows the pointer again. It is not a toggle. Window Maker cannot do this itself, so the module installs a small
+helper, `super-hold-override` (needs `python3-xlib`), started from Window Maker's autostart. While Super is down it
+puts an invisible input-only window over the screen, so mouse clicks do not reach windows until you release Super.
+`--click-to-focus` removes the helper.
+
 ## Apply it
 
 Either run the script in this module (it edits the file safely and keeps a one-time backup):

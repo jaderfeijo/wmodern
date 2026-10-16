@@ -30,7 +30,7 @@ DRY=0 YES=0 SUDO_OK=1 CMD=menu IDS=() NO_SELF=0 LOCAL=0
 # id | kind (module = modules/NAME in this repository, repo = github.com/jaderfeijo/NAME) | source | apt packages it needs | title | description
 CATALOGUE=(
 "super-keys|repo|wmaker-super-keys|xbindkeys wmctrl x11-utils python3 rofi|macOS-style Super keys|Super+Space launcher, Super+1..9 desktops, tiling, focus by direction, show desktop, lock key. Also changes some of Window Maker's own shortcuts (undone by remove)."
-"focus|module|focus|python3|Focus follows mouse|Focus follows the pointer and the window under it is raised at once. Takes effect when Window Maker is next started."
+"focus|module|focus|python3 python3-xlib|Focus follows mouse|Focus follows the pointer and the window under it is raised at once. Takes effect when Window Maker is next started."
 "shade-all|module|shade-all|wmctrl x11-utils xbindkeys python3|Shade all windows|One key rolls up every window on the desktop to its title bar; press again to unroll. Uses Super+Shift+H."
 "thinkpad|module|thinkpad|xbindkeys brightnessctl dunst libnotify-bin wireplumber xinput|ThinkPad keys|Brightness, volume, mute and mic-mute keys with an on-screen bar, plus touchpad tap-to-click. For Lenovo ThinkPads."
 "power|module|power|rofi acpid python3|Power-button menu|The power button opens a menu: lock, suspend, log out, restart, shut down. Needs sudo for a few files in /etc."

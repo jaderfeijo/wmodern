@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+"""Holding Super pauses focus-follows-mouse (not a toggle): while either Super key is down, an invisible input-only
+window covers the screen, so the pointer moving across windows no longer focuses or raises them. Releasing Super
+removes it and the window under the pointer takes the focus again. Needs python3-xlib."""
+import time
+from Xlib import X, XK, display
+
+d = display.Display()
+root = d.screen().root
+geo = root.get_geometry()
+codes = {d.keysym_to_keycode(XK.string_to_keysym(n)) for n in ("Super_L", "Super_R")} - {0}
+
+win = root.create_window(0, 0, geo.width, geo.height, 0, 0, X.InputOnly, X.CopyFromParent,
+                         override_redirect=True)
+
+def super_down():
+    keymap = d.query_keymap()
+    return any(keymap[c // 8] & (1 << (c % 8)) for c in codes)
+
+mapped = False
+while True:
+    down = super_down()
+    if down and not mapped:
+        win.map(); win.configure(stack_mode=X.Above); mapped = True; d.flush()
+    elif not down and mapped:
+        win.unmap(); mapped = False; d.flush()
+    time.sleep(0.03)

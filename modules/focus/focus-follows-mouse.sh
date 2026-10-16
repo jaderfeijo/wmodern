@@ -6,6 +6,8 @@
 #   ./focus-follows-mouse.sh --click-to-focus   back to Window Maker's default (click to focus, no auto-raise)
 #   ./focus-follows-mouse.sh --dry-run       show what would change
 #
+# While Super is held the pointer no longer changes the focus (see super-hold-override; needs python3-xlib).
+#
 # It edits ~/GNUstep/Defaults/WindowMaker (a backup is kept next to it, once). Window Maker only reads that file
 # when it starts, so afterwards use: root menu > Window Maker > Restart.
 set -euo pipefail
@@ -48,4 +50,40 @@ if not dry:
         shutil.copy2(path, backup)
     open(path, "w").write(text)
     print("Done. Now: root menu > Window Maker > Restart (Window Maker reads this file at startup).")
+PY
+
+# Super-hold override: a small helper started from Window Maker's autostart (sloppy mode only).
+BIN="${WMC_BIN_DIR:-$HOME/.local/bin}"
+AUTOSTART="${GNUSTEP_USER_ROOT:-$HOME/GNUstep}/Library/WindowMaker/autostart"
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+python3 - "$AUTOSTART" "$MODE" "$DRY" "$BIN" "$HERE/super-hold-override" <<'PY'
+import os, re, shutil, sys
+path, mode, dry, bindir, src = sys.argv[1:6]
+dry = dry == "1"
+name = "wmodern:focus-super-hold"
+begin, end = f"# >>> {name} >>>", f"# <<< {name} <<<"
+text = open(path).read() if os.path.exists(path) else None
+if text is None and mode == "manual":
+    sys.exit(0)
+text = re.sub(r"(?ms)^" + re.escape(begin) + r"\n.*?^" + re.escape(end) + r"\n?", "", text or "")
+if mode == "sloppy":
+    cmd = 'pgrep -f "^python3 .*/super-hold-override$" >/dev/null || "$HOME/.local/bin/super-hold-override" >/dev/null 2>&1 &'
+    blk = f"{begin}\n# Holding Super pauses focus-follows-mouse\n{cmd}\n{end}\n"
+    last = list(re.finditer(r"(?m)^exit\s+0\s*$", text))
+    if last:
+        i = last[-1].start(); text = text[:i] + blk + text[i:]
+    else:
+        text = text.rstrip("\n"); text = (text + "\n\n" if text else "#!/bin/sh\n\n") + blk
+print(("[dry-run] " if dry else "") + f"super-hold-override: {'installed' if mode == 'sloppy' else 'removed'}")
+if dry:
+    sys.exit(0)
+target = os.path.join(bindir, "super-hold-override")
+if mode == "sloppy":
+    os.makedirs(bindir, exist_ok=True); shutil.copy2(src, target)
+elif os.path.exists(target):
+    os.remove(target)
+os.makedirs(os.path.dirname(path), exist_ok=True)
+open(path, "w").write(text)
+if os.path.exists(path) and text.startswith("#!"):
+    os.chmod(path, 0o755)
 PY
