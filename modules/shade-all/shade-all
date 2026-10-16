@@ -1,0 +1,11 @@
+#!/bin/sh
+# Toggle: shade every window on the current desktop; if they're all shaded already, unshade them.
+cur=$(wmctrl -d | awk '$2=="*"{print $1}')
+ids=$(wmctrl -l | awk -v d="$cur" '$2==d || $2==-1 {print $1}')
+[ -n "$ids" ] || exit 0
+all=1
+for id in $ids; do
+  xprop -id "$id" _NET_WM_STATE 2>/dev/null | grep -q _NET_WM_STATE_SHADED || { all=0; break; }
+done
+op=add; [ "$all" = 1 ] && op=remove
+for id in $ids; do wmctrl -i -r "$id" -b "$op,shaded"; done

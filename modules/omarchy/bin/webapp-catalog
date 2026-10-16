@@ -1,0 +1,40 @@
+#!/bin/bash
+# Searchable catalog of web apps. Pick one to install it as a Chromium app; pick an installed one to remove it.
+CATALOG="$HOME/.local/share/omarchy-port/webapps.tsv"
+APPS_DIR="$HOME/.local/share/applications"
+CUSTOM="+  Custom URL..."
+
+installed() { grep -l '^Exec=.*omarchy-launch-webapp' "$APPS_DIR"/*.desktop 2>/dev/null | xargs -r -n1 basename | sed 's/\.desktop$//'; }
+pause() { echo; read -n 1 -s -r -p "Press any key to close..."; }
+
+while true; do
+  have=$(installed)
+  lines=("$CUSTOM")
+  while IFS=$'\t' read -r name url; do
+    if grep -qxF "$name" <<<"$have"; then lines+=("✓  $name  (installed)"); else lines+=("   $name  —  ${url#https://}"); fi
+  done < "$CATALOG"
+
+  pick=${WEBAPP_PICK:-$(printf '%s\n' "${lines[@]}" | gum filter --placeholder "Search web apps...  (Esc to quit)" --height 18 --header "Web Apps")}
+  [[ -z $pick ]] && exit 0
+
+  if [[ $pick == "$CUSTOM" ]]; then
+    omarchy-webapp-install; pause; exit 0
+  fi
+
+  name=$(sed -E 's/^(✓|[[:space:]])[[:space:]]+//; s/[[:space:]]+(—.*|\(installed\))$//' <<<"$pick")
+  if [[ $pick == ✓* ]]; then
+    if gum confirm "Remove web app \"$name\"?"; then OMARCHY_REMOVE_NOTIFY=false omarchy-webapp-remove "$name" && echo "Removed $name."; pause; fi
+    [[ -n $WEBAPP_PICK ]] && exit 0
+    continue
+  fi
+
+  url=$(awk -F'\t' -v n="$name" '$1==n{print $2}' "$CATALOG")
+  if omarchy-webapp-install "$name" "$url" ""; then
+    echo "Installed $name. Find it in the launcher (Super+Space)."
+  else
+    echo "Could not fetch the icon automatically."
+    icon=$(gum input --prompt "Icon URL or file> " --placeholder "PNG URL, file path, or leave empty to cancel")
+    [[ -n $icon ]] && omarchy-webapp-install "$name" "$url" "$icon" && echo "Installed $name."
+  fi
+  pause; exit 0
+done

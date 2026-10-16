@@ -1,0 +1,5 @@
+#!/bin/bash
+# Shim for xdg-terminal-exec on WindowMaker: --app-id=ID -e CMD... -> xterm with that window class.
+id=""; while [[ $1 == --* ]]; do case $1 in --app-id=*) id=${1#--app-id=};; esac; shift; done
+[[ $1 == -e ]] && shift
+if [[ -n $id ]]; then exec setsid xterm -name "$id" -class "$id" -e "$@"; else exec setsid xterm -e "$@"; fi

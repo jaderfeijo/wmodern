@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Remove Software
+Comment=Remove installed Debian packages
+Exec=xterm -geometry 120x35 -T "Remove Software" -e @BIN@/software-remove
+Icon=system-software-install
+Terminal=false
+Categories=System;PackageManager;
+Keywords=install;software;package;apt;flatpak;

@@ -1,0 +1,7 @@
+#!/bin/bash
+# Minimal stand-in for Omarchy's omarchy-i18n: English only, looks keys up in en-cli.json.
+cat="$HOME/.local/share/omarchy-port/en-cli.json"
+key=${1:-}; shift || true
+val=$(jq -r --arg k "$key" '.[$k] // $k' "$cat" 2>/dev/null || printf "%s" "$key")
+i=1; for a in "$@"; do val=${val//%$i/$a}; i=$((i+1)); done
+printf '%s\n' "$val"

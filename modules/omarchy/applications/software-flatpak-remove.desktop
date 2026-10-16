@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Remove Flatpak App
+Comment=Remove installed Flatpak apps
+Exec=xterm -geometry 120x35 -T "Remove Flatpak App" -e @BIN@/software-flatpak-remove
+Icon=system-software-install
+Terminal=false
+Categories=System;PackageManager;
+Keywords=remove;uninstall;software;package;flatpak;

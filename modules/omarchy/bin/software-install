@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Pick apt packages with fzf (Tab = multi-select, Enter = install)
+sel=$(apt-cache search . | sort | fzf --multi --prompt='Install package > ' \
+  --header='Tab: select  Enter: install  Esc: cancel' \
+  --preview='apt-cache show {1} | head -40' --preview-window=right:55% | awk '{print $1}')
+[ -z "$sel" ] && exit 0
+sudo apt install $sel
+read -rp $'\nDone. Press Enter to close.'

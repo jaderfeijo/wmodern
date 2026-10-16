@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Pick Flathub apps with fzf (Tab = multi-select, Enter = install)
+echo "Loading Flathub catalog..."
+sel=$(flatpak remote-ls --app flathub --columns=application,name,description 2>/dev/null | sort -k2 \
+  | fzf --multi --delimiter='\t' --prompt='Install Flatpak > ' \
+  --header='Tab: select  Enter: install  Esc: cancel' | awk -F'\t' '{print $1}')
+[ -z "$sel" ] && exit 0
+flatpak install -y flathub $sel
+read -rp $'\nDone. Press Enter to close.'

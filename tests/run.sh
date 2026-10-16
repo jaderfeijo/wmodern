@@ -23,7 +23,7 @@ check "no user name in paths" scan x "/(home|Users)/$user"
 echo "installer (modules only, in a scratch home)"
 H=$(mktemp -d); trap 'rm -rf "$H"' EXIT
 run() { env -u DISPLAY HOME="$H" XDG_CONFIG_HOME= XDG_DATA_HOME= XDG_CACHE_HOME= bash "$ROOT/install.sh" "$@" --no-sudo --no-self-update; }
-MODS="focus thinkpad power lock xterm webapp flatpak"
+MODS="focus shade-all thinkpad power lock xterm webapp flatpak omarchy"
 check "list works" run list
 check "dry run changes nothing" bash -c "$(declare -f run); H='$H'; ROOT='$ROOT'; run install $MODS --dry-run --yes && [ ! -e '$H/.xbindkeysrc' ] && [ ! -e '$H/.local/bin/webapp' ]"
 check "install all modules" run install $MODS --yes
@@ -33,12 +33,12 @@ a=$(snap); run install $MODS --yes >/dev/null 2>&1; b=$(snap)
 run install $MODS --yes >/dev/null 2>&1; c=$(snap); [ "$b" = "$c" ] && ok "third run changes nothing" || bad "third run changed files"
 for m in thinkpad power lock; do [ "$(grep -c '>>>' "$H/GNUstep/Library/WindowMaker/autostart")" -ge 3 ] || bad "autostart blocks"; done
 n=$(grep -c '>>> lock-on-suspend' "$H/GNUstep/Library/WindowMaker/autostart"); [ "$n" = 1 ] && ok "one lock block, not several" || bad "lock block count $n"
-[ -x "$H/.local/bin/webapp" ] && [ -x "$H/.local/bin/flatpak-wm" ] && ok "commands installed and executable" || bad "commands missing"
+[ -x "$H/.local/bin/webapp" ] && [ -x "$H/.local/bin/flatpak-wm" ] && [ -x "$H/.local/bin/shade-all" ] && [ -x "$H/.local/bin/omarchy-webapp-install" ] && ok "commands installed and executable" || bad "commands missing"
 check "all up to date after install" bash -c "$(declare -f run); H='$H'; ROOT='$ROOT'; ! run list | grep -E 'update available'"
 sed -i 's/^focus\t[0-9a-f]*/focus\t0000000000000000000000000000000000000000/' "$H/.local/share/wmodern/installed.tsv"
 check "detects an update" bash -c "$(declare -f run); H='$H'; ROOT='$ROOT'; run list | grep -E '^focus .*update available'"
 check "update installs it" bash -c "$(declare -f run); H='$H'; ROOT='$ROOT'; run update --yes && ! run list | grep -q 'update available'"
-check "remove works" run remove xterm focus --yes
+check "remove works" run remove xterm focus shade-all omarchy --yes
 [ "$(grep -c selectToClipboard "$H/.Xresources" 2>/dev/null)" = 0 ] && ok "removed block is gone" || bad "xterm block still there"
 check "unknown item is refused" bash -c "$(declare -f run); H='$H'; ROOT='$ROOT'; ! run install nonsense --yes"
 

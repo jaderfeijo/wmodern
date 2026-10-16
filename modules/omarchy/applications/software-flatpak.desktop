@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Install Flatpak App
+Comment=Search and install apps from Flathub
+Exec=xterm -geometry 120x35 -T "Install Flatpak App" -e @BIN@/software-flatpak
+Icon=system-software-install
+Terminal=false
+Categories=System;PackageManager;
+Keywords=install;software;package;apt;flatpak;

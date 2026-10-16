@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Install Software
+Comment=Search and install Debian packages
+Exec=xterm -geometry 120x35 -T "Install Software" -e @BIN@/software-install
+Icon=system-software-install
+Terminal=false
+Categories=System;PackageManager;
+Keywords=install;software;package;apt;flatpak;

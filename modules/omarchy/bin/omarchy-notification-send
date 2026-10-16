@@ -1,0 +1,4 @@
+#!/bin/bash
+# Shim: show a desktop notification if possible, else print.
+args=(); for a in "$@"; do [[ $a == -g ]] || args+=("$a"); done
+if command -v notify-send >/dev/null 2>&1; then notify-send "${args[@]}"; else printf '%s\n' "${args[*]}"; fi

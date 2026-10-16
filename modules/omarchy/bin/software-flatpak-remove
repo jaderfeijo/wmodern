@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Pick installed Flatpak apps with fzf (Tab = multi-select, Enter = remove)
+sel=$(flatpak list --app --columns=application,name,description 2>/dev/null | sort -t$'\t' -k2 \
+  | fzf --multi --delimiter='\t' --prompt='Remove Flatpak > ' \
+  --header='Tab: select  Enter: remove  Esc: cancel' | awk -F'\t' '{print $1}')
+[ -z "$sel" ] && exit 0
+flatpak uninstall -y $sel
+read -rp $'\nDone. Press Enter to close.'

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Name=Web Apps
+Comment=Web Apps
+Exec=xdg-terminal-exec --app-id=TUI.float -e webapp-catalog
+Terminal=false
+Type=Application
+Icon=web-browser
+StartupNotify=true

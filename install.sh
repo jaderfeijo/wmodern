@@ -31,6 +31,7 @@ DRY=0 YES=0 SUDO_OK=1 CMD=menu IDS=() NO_SELF=0 LOCAL=0
 CATALOGUE=(
 "super-keys|repo|wmaker-super-keys|xbindkeys wmctrl x11-utils python3 rofi|macOS-style Super keys|Super+Space launcher, Super+1..9 desktops, tiling, focus by direction, show desktop, lock key. Also changes some of Window Maker's own shortcuts (undone by remove)."
 "focus|module|focus|python3|Focus follows mouse|Focus follows the pointer and the window under it is raised at once. Takes effect when Window Maker is next started."
+"shade-all|module|shade-all|wmctrl x11-utils xbindkeys python3|Shade all windows|One key rolls up every window on the desktop to its title bar; press again to unroll. Uses Super+Shift+H."
 "thinkpad|module|thinkpad|xbindkeys brightnessctl dunst libnotify-bin wireplumber xinput|ThinkPad keys|Brightness, volume, mute and mic-mute keys with an on-screen bar, plus touchpad tap-to-click. For Lenovo ThinkPads."
 "power|module|power|rofi acpid python3|Power-button menu|The power button opens a menu: lock, suspend, log out, restart, shut down. Needs sudo for a few files in /etc."
 "lock|module|lock|xss-lock i3lock python3|Lock on suspend|The screen locks before the machine sleeps and on 'loginctl lock-session' (xss-lock + i3lock)."
@@ -40,6 +41,7 @@ CATALOGUE=(
 "pwvol|repo|wmpwvol|python3-cairo pipewire-bin wireplumber|Volume dockapp|PipeWire volume dockapp: live meter, mute, scroll to change. Drag its icon into the Dock once."
 "bluetooth|repo|wmbluetooth|python3-cairo python3-gi bluez rofi|Bluetooth dockapp|Connected Bluetooth devices and their batteries; click to connect. Drag its icon into the Dock once."
 "battery|repo|wmbattery-power-draw||Battery dockapp with watts|Debian's wmbattery, built with a patch that shows the power draw in watts. Builds from source (sudo for build tools)."
+"omarchy|module|omarchy|gum jq fzf rofi curl file xterm chromium|Omarchy ports|Omarchy's web-app and TUI installers, a web-app catalog and fzf software pickers, on Window Maker."
 "getapp|repo|getapp|fzf python3|getapp installer|One fuzzy search to install from apt, Flatpak, the Snap Store and web apps."
 )
 declare -A KIND SRC DEPS TITLE DESC
@@ -140,8 +142,10 @@ dockapp_block() {  # dockapp_block add|remove NAME
 do_install() {  # runs inside the component's checkout
   local id=$1 dry=""; [ "$DRY" = 1 ] && dry="--dry-run"
   case $id in
-    super-keys) local extra=(); installed_or_planned xterm && extra+=(--no-xterm); ./install.sh --no-restart $dry "${extra[@]}" ;;
+    super-keys) local extra=(); installed_or_planned xterm && extra+=(--no-xterm); installed_or_planned shade-all && extra+=(--no-show-desktop); ./install.sh --no-restart $dry "${extra[@]}" ;;
     focus)      ./focus-follows-mouse.sh $dry ;;
+    shade-all)  ./install.sh --no-restart --skip-deps-check $dry ;;
+    omarchy)    ./install.sh --skip-deps-check $dry ;;
     thinkpad)   ./setup.sh --no-restart --skip-deps-check $dry ;;
     power)      local extra=(); [ "$SUDO_OK" = 1 ] || extra+=(--no-system); ./install.sh --no-restart --skip-deps-check $dry "${extra[@]}" ;;
     lock)       ./install.sh --no-restart --skip-deps-check $dry ;;
@@ -162,6 +166,8 @@ do_remove() {
   case $id in
     super-keys) ./install.sh --uninstall --no-restart $dry ;;
     focus)      ./focus-follows-mouse.sh --click-to-focus $dry ;;
+    shade-all)  ./install.sh --uninstall --no-restart --skip-deps-check $dry ;;
+    omarchy)    ./install.sh --uninstall $dry ;;
     thinkpad)   ./setup.sh --uninstall --no-restart --skip-deps-check $dry ;;
     power)      local extra=(); [ "$SUDO_OK" = 1 ] || extra+=(--no-system); ./install.sh --uninstall --no-restart --skip-deps-check $dry "${extra[@]}" ;;
     lock)       ./install.sh --uninstall --no-restart $dry ;;
@@ -291,6 +297,11 @@ install_self() {
 run_plan() {
   PLAN=("$@")
   [ "${#PLAN[@]}" -gt 0 ] || { say "Nothing selected."; return 0; }
+  # shade-all owns Super+Shift+H, so the Super keys must be (re)applied without their show-desktop binding
+  if selected shade-all && ! selected super-keys && [ -n "$(state_rev super-keys)" ]; then
+    PLAN=(super-keys "${PLAN[@]}"); ST[super-keys]=${ST[super-keys]:-installed}
+    say "(Re-applying super-keys too: shade-all takes over Super+Shift+H from its show-desktop binding.)"
+  fi
   local id; say; say "${B}Plan:${N}"
   for id in "${PLAN[@]}"; do printf '  - %s (%s)\n' "${TITLE[$id]}" "${ST[$id]:-}"; done
   say
@@ -353,7 +364,13 @@ cmd_remove() {
   for id in "${IDS[@]}"; do
     say; say "${B}==> removing ${TITLE[$id]}${N}"
     fetch_src "$id" || { warn "could not download ${SRC[$id]} (needed for its uninstaller)"; failed=1; continue; }
-    if ( cd "$(src_dir "$id")" && do_remove "$id" ); then state_del "$id"; else failed=1; fi
+    if ( cd "$(src_dir "$id")" && do_remove "$id" ); then
+      state_del "$id"
+      if [ "$id" = shade-all ] && [ -n "$(state_rev super-keys)" ] && fetch_src super-keys; then
+        say "Giving Super+Shift+H back to super-keys' show-desktop ..."
+        ( cd "$(src_dir super-keys)" && do_install super-keys ) || warn "could not re-apply super-keys"
+      fi
+    else failed=1; fi
   done
   return $failed
 }

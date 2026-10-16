@@ -1,0 +1,5 @@
+#!/bin/bash
+# omarchy-menu-select <prompt> <items...> [-- ...] : pick one item with rofi, print it.
+prompt=$1; shift
+items=(); for a in "$@"; do [[ $a == -- ]] && break; items+=("$a"); done
+printf '%s\n' "${items[@]}" | rofi -dmenu -i -p "$prompt"

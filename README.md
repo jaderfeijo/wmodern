@@ -39,18 +39,20 @@ To look first: add `-s -- --dry-run` after `bash`, or read [`install.sh`](instal
 |---|---|
 | [`super-keys`](https://github.com/jaderfeijo/wmaker-super-keys) | macOS-style **Super-key shortcuts**: `Super+Space` launcher, tiling and centering, directional focus (`Super+arrows`), desktops created on demand, move window to desktop, cycle windows of one application, show desktop. |
 | [`focus`](modules/focus) | **Focus follows mouse** with instant auto-raise, and the gotcha that Window Maker must be restarted to read it. |
+| [`shade-all`](modules/shade-all) | **Shade all windows**: one key rolls up every window on the desktop to its title bar, again to unroll. Takes `Super+Shift+H` from the show-desktop binding of `super-keys` (the installer handles that). |
 | [`thinkpad`](modules/thinkpad) | **Lenovo ThinkPad keys**: brightness, volume, mute and microphone-mute with an on-screen bar, mute LEDs, tap-to-click for the touchpad. |
 | [`power`](modules/power) | **Power-button menu** (lock, suspend, log out, restart, shut down) through `acpid` and rofi. |
 | [`lock`](modules/lock) | **Lock on suspend** and on `loginctl lock-session`, with `xss-lock` and `i3lock`. |
 | [`xterm`](modules/xterm) | **xterm clipboard** that works (Ctrl+Shift+C/V, Super+C/V, OSC 52) and an optional text scale (`Xft.dpi`), with the custom-window-class trap explained. |
 | [`webapp`](modules/webapp) | **Web apps**: `webapp add NAME URL` makes a launcher entry that opens a site in a tab-less Chromium window. |
 | [`flatpak`](modules/flatpak) | **Flatpak in the session**: launcher visibility and `slack://`-style sign-in links. |
+| [`omarchy`](modules/omarchy) | **Omarchy ports**: Omarchy's web-app and TUI launcher installers (unmodified), a searchable web-app catalog and fzf pickers for apt and Flatpak, adapted to Window Maker. |
 | [`pwvol`](https://github.com/jaderfeijo/wmpwvol) | **Volume dockapp** for PipeWire: live level meter, red crossed-out speaker when muted. |
 | [`bluetooth`](https://github.com/jaderfeijo/wmbluetooth) | **Bluetooth dockapp**: connected devices and their batteries; click to connect. |
 | [`battery`](https://github.com/jaderfeijo/wmbattery-power-draw) | **Battery dockapp showing watts**: a patch for Debian's `wmbattery`, built from source. |
 | [`getapp`](https://github.com/jaderfeijo/getapp) | **One fuzzy search to install anything**: apt, Flatpak, the Snap Store and web apps in one list. |
 
-Items in [`modules/`](modules) live in this repository; the four larger programs keep their own repositories
+Items in [`modules/`](modules) live in this repository; the larger programs keep their own repositories
 (each with its own tests and history) and are installed from there. Each module has its own README and its own
 installer, so you can also use one without wmodern: `git clone` this repository and run
 `modules/<name>/install.sh --help`.

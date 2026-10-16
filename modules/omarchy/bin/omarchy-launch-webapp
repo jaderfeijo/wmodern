@@ -1,0 +1,3 @@
+#!/bin/bash
+# Open a URL as a Chromium "app" window (no tabs/address bar).
+exec setsid chromium --app="$1" "${@:2}"
