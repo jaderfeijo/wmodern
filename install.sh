@@ -31,13 +31,19 @@ DRY=0 YES=0 SUDO_OK=1 CMD=menu IDS=() NO_SELF=0 LOCAL=0
 CATALOGUE=(
 "super-keys|repo|wmaker-super-keys|xbindkeys wmctrl x11-utils python3 rofi|macOS-style Super keys|Super+Space launcher, Super+1..9 desktops, tiling, focus by direction, show desktop, lock key. Also changes some of Window Maker's own shortcuts (undone by remove)."
 "focus|module|focus|python3 python3-xlib|Focus follows mouse|Focus follows the pointer and the window under it is raised at once. Takes effect when Window Maker is next started."
-"window-keys|module|window-keys|wmctrl x11-utils xbindkeys python3|Super+Q and window keys|Super+Q closes the window (also the highlighted one in the Super+Tab switcher); Super+Shift+Alt +/- resize around the centre and Super+Shift+Alt+arrows move it; add Control for big steps."
+"wmaker-randr|module|wmaker-randr|build-essential autoconf automake libtool pkg-config libxrandr-dev libxft-dev libxpm-dev libxmu-dev libxext-dev libxrender-dev libfontconfig-dev libpng-dev libjpeg-dev libtiff-dev libgif-dev libwebp-dev libmagic-dev libbsd-dev|Window Maker with RandR|Builds upstream Window Maker with RandR into ~/.local, so plugging in monitors or changing the primary display moves the Dock and resizes the desktop with no restart. Debian stays as the fallback. Used from the next login."
 "shade-all|module|shade-all|wmctrl x11-utils xbindkeys python3|Shade all windows|One key rolls up every window on the desktop to its title bar; press again to unroll. Uses Super+Shift+H."
 "thinkpad|module|thinkpad|xbindkeys brightnessctl dunst libnotify-bin wireplumber xinput|ThinkPad keys|Brightness, volume, mute and mic-mute keys with an on-screen bar, plus touchpad tap-to-click. For Lenovo ThinkPads."
 "power|module|power|rofi acpid python3|Power-button menu|The power button opens a menu: lock, suspend, log out, restart, shut down. Needs sudo for a few files in /etc."
 "lock|module|lock|xss-lock i3lock python3|Lock on suspend|The screen locks before the machine sleeps and on 'loginctl lock-session' (xss-lock + i3lock)."
 "xterm|module|xterm|python3 x11-xserver-utils|xterm clipboard|xterm shares the CLIPBOARD: Ctrl+Shift+C/V, Super+C/V, OSC 52. Leaves your text scale alone."
+"caps-lock|module|caps-lock|python3 x11-xkb-utils|Normal Caps Lock|Debian's Window Maker turns Caps Lock into the Compose key at every login; this takes that off again, for good, and keeps your other keyboard options."
+"no-welcome|module|no-welcome|python3|No welcome window|Switches off the welcome window that Debian's Window Maker live packages show at every login (moved to AutoStart/Disabled; undone by remove)."
+"window-keys|module|window-keys|wmctrl x11-utils xbindkeys python3|Super+Q and resize keys|Super+Q closes the window (also the highlighted one in the Super+Tab switcher); Super+Shift+Alt +/- resize around the centre and Super+Shift+Alt+arrows move it; add Control for big steps."
+"quiet-move|module|quiet-move|python3|No move tooltip|Hides the position box Window Maker shows while you drag a window. Takes effect when Window Maker is next started."
+"fixed-nerd|repo|fixed-nerd|xfonts-utils x11-xserver-utils python3|Fixed Nerd font|The classic X11 'fixed' 6x13 font with Powerline and Nerd Font icons and TUI symbols, as the default font of xterm and uxterm. Used by new terminals."
 "webapp|module|webapp|curl file chromium|Web apps (Chromium)|The 'webapp' command: turn a website into a launcher entry that opens in a tab-less Chromium window."
+"chromium-scale|module|chromium-scale|chromium python3|Smaller Chromium|Chromium's own interface and every web page at 80% (20% smaller than stock), through its launcher. Quit Chromium and start it again."
 "flatpak|module|flatpak|flatpak xdg-utils python3|Flatpak in the session|The 'flatpak-wm' command; makes Flatpak apps and slack:// style sign-in links work, for future logins."
 "pwvol|repo|wmpwvol|python3-cairo pipewire-bin wireplumber|Volume dockapp|PipeWire volume dockapp: live meter, mute, scroll to change. Drag its icon into the Dock once."
 "bluetooth|repo|wmbluetooth|python3-cairo python3-gi bluez rofi|Bluetooth dockapp|Connected Bluetooth devices and their batteries; click to connect. Drag its icon into the Dock once."
@@ -145,14 +151,20 @@ do_install() {  # runs inside the component's checkout
   case $id in
     super-keys) local extra=(); installed_or_planned xterm && extra+=(--no-xterm); installed_or_planned shade-all && extra+=(--no-show-desktop); ./install.sh --no-restart $dry "${extra[@]}" ;;
     focus)      ./focus-follows-mouse.sh $dry ;;
-    window-keys) ./install.sh --no-restart --skip-deps-check $dry ;;
+    wmaker-randr) ./install.sh $dry ;;
     shade-all)  ./install.sh --no-restart --skip-deps-check $dry ;;
     omarchy)    ./install.sh --skip-deps-check $dry ;;
     thinkpad)   ./setup.sh --no-restart --skip-deps-check $dry ;;
     power)      local extra=(); [ "$SUDO_OK" = 1 ] || extra+=(--no-system); ./install.sh --no-restart --skip-deps-check $dry "${extra[@]}" ;;
     lock)       ./install.sh --no-restart --skip-deps-check $dry ;;
     xterm)      ./install.sh --no-apply $dry ;;
+    caps-lock)  ./install.sh --no-apply $dry ;;
+    no-welcome) ./install.sh $dry ;;
+    window-keys) ./install.sh --no-restart --skip-deps-check $dry ;;
+    quiet-move) ./install.sh $dry ;;
+    fixed-nerd) ./install.sh --no-apply $dry ;;
     webapp)     ./install.sh $dry ;;
+    chromium-scale) ./install.sh $dry ;;
     flatpak)    ./install.sh $dry; if [ "$DRY" = 1 ]; then say "  [dry-run] flatpak-wm fix"; else "$BIN/flatpak-wm" fix; fi ;;
     pwvol|bluetooth)
       if [ "$DRY" = 1 ]; then say "  [dry-run] make install PREFIX=\$HOME/.local   (and add $id to the Window Maker autostart file)"
@@ -168,14 +180,19 @@ do_remove() {
   case $id in
     super-keys) ./install.sh --uninstall --no-restart $dry ;;
     focus)      ./focus-follows-mouse.sh --click-to-focus $dry ;;
-    window-keys) ./install.sh --uninstall --no-restart --skip-deps-check $dry ;;
+    wmaker-randr) ./install.sh --uninstall $dry ;;
     shade-all)  ./install.sh --uninstall --no-restart --skip-deps-check $dry ;;
     omarchy)    ./install.sh --uninstall $dry ;;
     thinkpad)   ./setup.sh --uninstall --no-restart --skip-deps-check $dry ;;
     power)      local extra=(); [ "$SUDO_OK" = 1 ] || extra+=(--no-system); ./install.sh --uninstall --no-restart --skip-deps-check $dry "${extra[@]}" ;;
     lock)       ./install.sh --uninstall --no-restart $dry ;;
     xterm)      ./install.sh --uninstall --no-apply $dry ;;
-    webapp|flatpak) ./install.sh --uninstall $dry ;;
+    caps-lock)  ./install.sh --uninstall $dry ;;
+    no-welcome) ./install.sh --uninstall $dry ;;
+    window-keys) ./install.sh --uninstall --no-restart --skip-deps-check $dry ;;
+    quiet-move) ./install.sh --uninstall $dry ;;
+    fixed-nerd) ./install.sh --uninstall --no-apply $dry ;;
+    webapp|flatpak|chromium-scale) ./install.sh --uninstall $dry ;;
     pwvol|bluetooth)
       local n=wm$id
       if [ "$DRY" = 1 ]; then say "  [dry-run] make uninstall"; else make uninstall PREFIX="${PREFIX:-$HOME/.local}"; fi

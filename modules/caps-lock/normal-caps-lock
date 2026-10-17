@@ -1,0 +1,9 @@
+#!/bin/sh
+# Give Caps Lock back its normal behaviour: take "compose:caps" (Caps Lock as the Compose key) off the keyboard
+# options of the running X session, and leave every other option alone. Does nothing when it is not set.
+command -v setxkbmap >/dev/null 2>&1 || exit 0
+opts=$(setxkbmap -query 2>/dev/null | sed -n 's/^options: *//p')
+case ",$opts," in *,compose:caps,*) ;; *) exit 0 ;; esac
+rest=$(printf '%s' "$opts" | tr ',' '\n' | grep -vx 'compose:caps' | paste -sd, -)
+setxkbmap -option
+[ -z "$rest" ] || setxkbmap -option "$rest"

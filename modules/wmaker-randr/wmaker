@@ -1,0 +1,10 @@
+#!/bin/sh
+# Starts the RandR-aware Window Maker built by the wmodern `wmaker-randr` module, and falls back to Debian's own
+# /usr/bin/wmaker if that build is missing, so a broken build can never leave you without a desktop.
+# It sits in ~/.local/bin, which comes before /usr/bin on the login PATH, so the session picks it up on its own.
+NEW="${WMODERN_WMAKER_PREFIX:-$HOME/.local/opt/wmaker}/bin/wmaker"
+if [ -x "$NEW" ]; then
+  [ -n "$WMAKER_USER_ROOT" ] || export WMAKER_USER_ROOT="$HOME/GNUstep"
+  exec "$NEW" "$@"
+fi
+exec /usr/bin/wmaker "$@"

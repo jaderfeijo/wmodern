@@ -41,11 +41,16 @@ To look first: add `-s -- --dry-run` after `bash`, or read [`install.sh`](instal
 | [`focus`](modules/focus) | **Focus follows mouse** with instant auto-raise, and the gotcha that Window Maker must be restarted to read it. |
 | [`shade-all`](modules/shade-all) | **Shade all windows**: one key rolls up every window on the desktop to its title bar, again to unroll. Takes `Super+Shift+H` from the show-desktop binding of `super-keys` (the installer handles that). |
 | [`thinkpad`](modules/thinkpad) | **Lenovo ThinkPad keys**: brightness, volume, mute and microphone-mute with an on-screen bar, mute LEDs, tap-to-click for the touchpad. |
-| [`window-keys`](modules/window-keys) | **Super+Q and window keys**: Super+Q closes the window, also the highlighted one in the Super+Tab switcher; Super+Shift+Alt `+`/`-` resize it around its centre and Super+Shift+Alt+arrows move it (Control for bigger steps). |
 | [`power`](modules/power) | **Power-button menu** (lock, suspend, log out, restart, shut down) through `acpid` and rofi. |
 | [`lock`](modules/lock) | **Lock on suspend** and on `loginctl lock-session`, with `xss-lock` and `i3lock`. |
 | [`xterm`](modules/xterm) | **xterm clipboard** that works (Ctrl+Shift+C/V, Super+C/V, OSC 52) and an optional text scale (`Xft.dpi`), with the custom-window-class trap explained. |
+| [`caps-lock`](modules/caps-lock) | **Normal Caps Lock**: Debian's Window Maker turns Caps Lock into the Compose key at every login; this removes `compose:caps` for good (and only that option) and switches Debian's startup script off. |
+| [`no-welcome`](modules/no-welcome) | **No welcome window**: switches off the welcome window Debian's Window Maker live packages show at every login (moved to `AutoStart/Disabled`, nothing deleted). |
+| [`quiet-move`](modules/quiet-move) | **No move tooltip**: hides the position box Window Maker shows in the corner while you drag a window (`MoveDisplay = none`). |
+| [`window-keys`](modules/window-keys) | **Super+Q and resize keys**: Super+Q closes the window, also the highlighted one in the Super+Tab switcher; Super+Shift+Alt `+`/`-` resize it around its centre (Control for bigger steps). |
+| [`fixed-nerd`](https://github.com/jaderfeijo/fixed-nerd) | **Fixed Nerd font**: the classic X11 `fixed` 6x13 bitmap font extended with Powerline, Nerd Font icons and the symbols coding TUIs (Claude Code, lazygit, btop, ...) use, as the default font of xterm and uxterm. |
 | [`webapp`](modules/webapp) | **Web apps**: `webapp add NAME URL` makes a launcher entry that opens a site in a tab-less Chromium window. |
+| [`chromium-scale`](modules/chromium-scale) | **Smaller Chromium**: its interface and every web page at 80% (20% smaller than stock) with `--force-device-scale-factor`, through the launcher; any value from 25 to 300. |
 | [`flatpak`](modules/flatpak) | **Flatpak in the session**: launcher visibility and `slack://`-style sign-in links. |
 | [`omarchy`](modules/omarchy) | **Omarchy ports**: Omarchy's web-app and TUI launcher installers (unmodified), a searchable web-app catalog and fzf pickers for apt and Flatpak, adapted to Window Maker. |
 | [`pwvol`](https://github.com/jaderfeijo/wmpwvol) | **Volume dockapp** for PipeWire: live level meter, red crossed-out speaker when muted. |
@@ -65,6 +70,8 @@ installer, so you can also use one without wmodern: `git clone` this repository 
 * **Nothing is replaced.** Installers add a clearly marked block (`# >>> name >>>` ... `# <<< name <<<`) to your
   `~/.xbindkeysrc`, Window Maker `autostart`, `~/.Xresources`; running them twice does not duplicate it, and
   `--uninstall` removes exactly that block. For Window Maker's own settings they keep a one-time backup.
+* **Every app is in the launcher.** Apps wmodern installs, and apps you install later (apt, Flatpak, web apps, ...), get a
+  `.desktop` entry so they show in `Super+Space`.
 * **Everything has `--dry-run`** and `--uninstall`.
 * **Nothing about the author's machine** is in here: no host names, home paths or addresses (checked by the tests).
 
