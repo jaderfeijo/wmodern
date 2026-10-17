@@ -16,3 +16,9 @@ The launcher (`Super+Space`, rofi `drun`) lists only `.desktop` files. An app th
   A module without a launchable app (key bindings, settings only) needs nothing.
 * Companion tools that live in their own repositories (`wm-theme`/Appearance.app, DisplayScaling.app, the dockapps)
   follow the same rule in their own installers.
+
+## Commit and push when the work is done
+
+When a piece of work in this repository is finished and the tests pass, commit it and push it to `origin` without being
+asked again. Run `tests/run.sh` first and do not edit files while it runs (a changed revision makes the "up to date"
+check fail).
