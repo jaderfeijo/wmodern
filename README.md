@@ -47,6 +47,7 @@ To look first: add `-s -- --dry-run` after `bash`, or read [`install.sh`](instal
 | [`caps-lock`](modules/caps-lock) | **Normal Caps Lock**: Debian's Window Maker turns Caps Lock into the Compose key at every login; this removes `compose:caps` for good (and only that option) and switches Debian's startup script off. |
 | [`no-welcome`](modules/no-welcome) | **No welcome window**: switches off the welcome window Debian's Window Maker live packages show at every login (moved to `AutoStart/Disabled`, nothing deleted). |
 | [`quiet-move`](modules/quiet-move) | **No move tooltip**: hides the position box Window Maker shows in the corner while you drag a window (`MoveDisplay = none`). |
+| [`workspace-name`](modules/workspace-name) | **Workspace name flash**: shows the name of the workspace in the centre of the screen when you switch (`WorkspaceNameDisplayPosition = center`). |
 | [`window-keys`](modules/window-keys) | **Super+Q and resize keys**: Super+Q closes the window, also the highlighted one in the Super+Tab switcher; Super+Shift+Alt `+`/`-` resize it around its centre (Control for bigger steps). |
 | [`fixed-nerd`](https://github.com/jaderfeijo/fixed-nerd) | **Fixed Nerd font**: the classic X11 `fixed` 6x13 bitmap font extended with Powerline, Nerd Font icons and the symbols coding TUIs (Claude Code, lazygit, btop, ...) use, as the default font of xterm and uxterm. |
 | [`webapp`](modules/webapp) | **Web apps**: `webapp add NAME URL` makes a launcher entry that opens a site in a tab-less Chromium window. |

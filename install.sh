@@ -41,6 +41,7 @@ CATALOGUE=(
 "no-welcome|module|no-welcome|python3|No welcome window|Switches off the welcome window that Debian's Window Maker live packages show at every login (moved to AutoStart/Disabled; undone by remove)."
 "window-keys|module|window-keys|wmctrl x11-utils xbindkeys python3|Super+Q and resize keys|Super+Q closes the window (also the highlighted one in the Super+Tab switcher); Super+Shift+Alt +/- resize around the centre and Super+Shift+Alt+arrows move it; add Control for big steps."
 "quiet-move|module|quiet-move|python3|No move tooltip|Hides the position box Window Maker shows while you drag a window. Takes effect when Window Maker is next started."
+"workspace-name|module|workspace-name|python3|Workspace name flash|Flashes the name of the workspace in the centre of the screen when you switch workspaces. Takes effect when Window Maker is next started."
 "fixed-nerd|repo|fixed-nerd|xfonts-utils x11-xserver-utils python3|Fixed Nerd font|The classic X11 'fixed' 6x13 font with Powerline and Nerd Font icons and TUI symbols, as the default font of xterm and uxterm. Used by new terminals."
 "webapp|module|webapp|curl file chromium|Web apps (Chromium)|The 'webapp' command: turn a website into a launcher entry that opens in a tab-less Chromium window."
 "chromium-scale|module|chromium-scale|chromium python3|Smaller Chromium|Chromium's own interface and every web page at 80% (20% smaller than stock), through its launcher. Quit Chromium and start it again."
@@ -162,6 +163,7 @@ do_install() {  # runs inside the component's checkout
     no-welcome) ./install.sh $dry ;;
     window-keys) ./install.sh --no-restart --skip-deps-check $dry ;;
     quiet-move) ./install.sh $dry ;;
+    workspace-name) ./install.sh $dry ;;
     fixed-nerd) ./install.sh --no-apply $dry ;;
     webapp)     ./install.sh $dry ;;
     chromium-scale) ./install.sh $dry ;;
@@ -191,6 +193,7 @@ do_remove() {
     no-welcome) ./install.sh --uninstall $dry ;;
     window-keys) ./install.sh --uninstall --no-restart --skip-deps-check $dry ;;
     quiet-move) ./install.sh --uninstall $dry ;;
+    workspace-name) ./install.sh --uninstall $dry ;;
     fixed-nerd) ./install.sh --uninstall --no-apply $dry ;;
     webapp|flatpak|chromium-scale) ./install.sh --uninstall $dry ;;
     pwvol|bluetooth)
