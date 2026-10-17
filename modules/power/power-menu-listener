@@ -8,8 +8,15 @@ RUN="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 FIFO="$RUN/power-menu.fifo"
 PIDFILE="$RUN/power-menu-listener.pid"
 DIR=$(dirname "$(readlink -f "$0")")
-MENU="${POWER_MENU:-$DIR/power-menu}"
-PROC="${POWER_MENU_PROC:-rofi}"                  # process name of the menu, to close it on the second press
+# Window Maker's own shutdown dialog (Debian's wmlive-utils, the root menu's "Shutdown") when it is there, else our
+# rofi menu. CLOSE is the pkill pattern that finds the open menu again, to close it on the second press.
+if [ -z "$POWER_MENU" ] && [ -x /usr/bin/wmlive-shutdown ]; then
+  MENU=/usr/bin/wmlive-shutdown
+  CLOSE=${POWER_MENU_CLOSE:-'yad .*--name=shutdown'}
+else
+  MENU="${POWER_MENU:-$DIR/power-menu}"
+  CLOSE=${POWER_MENU_CLOSE:-'^rofi'}
+fi
 
 # replace a previous copy of ourselves instead of leaving it orphaned on a deleted FIFO
 if [ -f "$PIDFILE" ]; then
@@ -25,5 +32,5 @@ while :; do
   now=$(date +%s%3N)
   [ $((now - last)) -lt 400 ] && continue
   last=$now
-  pkill -x "$PROC" || "$MENU" &
+  pkill -f "$CLOSE" || "$MENU" &
 done

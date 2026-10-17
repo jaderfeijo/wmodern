@@ -2,7 +2,7 @@
 
 > Module `power` of [wmodern](https://github.com/jaderfeijo/wmodern): install it with `wmodern install power`, or use it on its own as described below.
 
-Press the laptop's power button and a rofi menu pops up: **Lock, Suspend, Hibernate, Log out, Restart, Shut down**. Press it
+Press the laptop's power button and Window Maker's own shutdown dialog (`wmlive-shutdown`, the root menu's *Shutdown*) pops up. Without `wmlive-utils` installed, a rofi menu with **Lock, Suspend, Hibernate, Log out, Restart, Shut down** pops up instead. Press it
 again to close the menu. Without this, systemd's default on a window manager is to power the machine off the moment
 you touch the button.
 
