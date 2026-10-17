@@ -1,10 +1,10 @@
 #!/bin/sh
-# wmodern-move left|right|up|down small|large -- move the focused window (small = 20 px, large = 100 px, or set
-# WMODERN_MOVE_SMALL / WMODERN_MOVE_LARGE). The window stays on the screen.
+# wmodern-move left|right|up|down small|medium|large -- move the focused window (small = 3 px, medium = 20 px,
+# large = 100 px, or set WMODERN_MOVE_SMALL / _MEDIUM / _LARGE). The window stays on the screen.
 dir=${1:-}; size=${2:-small}
-case $size in small) d=${WMODERN_MOVE_SMALL:-20} ;; large) d=${WMODERN_MOVE_LARGE:-100} ;; *) dir= ;; esac
+case $size in small) d=${WMODERN_MOVE_SMALL:-3} ;; medium) d=${WMODERN_MOVE_MEDIUM:-20} ;; large) d=${WMODERN_MOVE_LARGE:-100} ;; *) dir= ;; esac
 case $dir in left) dx=-$d dy=0 ;; right) dx=$d dy=0 ;; up) dx=0 dy=-$d ;; down) dx=0 dy=$d ;;
-  *) echo "usage: wmodern-move left|right|up|down small|large" >&2; exit 2 ;; esac
+  *) echo "usage: wmodern-move left|right|up|down small|medium|large" >&2; exit 2 ;; esac
 
 win=$(xprop -root _NET_ACTIVE_WINDOW | grep -o "0x[0-9a-f]*")
 [ -n "$win" ] && [ "$win" != 0x0 ] || exit 0

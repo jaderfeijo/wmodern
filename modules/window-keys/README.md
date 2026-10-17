@@ -6,11 +6,12 @@
 | `Super+W` | Still closes the window (moved from Window Maker's `CloseKey` to `xbindkeys`). |
 | `Super+Shift+Alt` `+` / `-` | Grow / shrink the window by 10 px on every side. |
 | `Super+Shift+Alt+Control` `+` / `-` | The same by 50 px on every side. |
-| `Super+Shift+Alt` `←↑→↓` | Move the window 20 px. |
+| `Super+Shift+Alt` `←↑→↓` | Move the window 3 px. |
+| `Super+Shift+Control` `←↑→↓` | Move it 20 px. |
 | `Super+Shift+Alt+Control` `←↑→↓` | Move it 100 px. |
 
 Resizing is from the centre, stays on screen and never goes below 150x80. Set `WMODERN_RESIZE_SMALL` /
-`WMODERN_RESIZE_LARGE` (pixels per side), `WMODERN_MOVE_SMALL` / `WMODERN_MOVE_LARGE` to change the steps. Moving keeps the window on the screen. (`Super+Shift+Arrows` are the tiling keys of `super-keys`.) `=`, `_` and the keypad `+`/`-` work as well.
+`WMODERN_RESIZE_LARGE` (pixels per side), `WMODERN_MOVE_SMALL` / `_MEDIUM` / `_LARGE` to change the steps. Moving keeps the window on the screen. The smallest step is 3 px because Window Maker places windows on a 3 px grid: a 1 or 2 px request is rounded back to where the window was. (`Super+Shift+Arrows` are the tiling keys of `super-keys`.) `=`, `_` and the keypad `+`/`-` work as well.
 
 ```
 ./install.sh --dry-run

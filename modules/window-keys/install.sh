@@ -101,9 +101,10 @@ tmp=$(mktemp); trap 'rm -f "$tmp"' EXIT
   for k in minus underscore KP_Subtract; do printf '"%s/wmodern-resize shrink small"\n    Mod4 + Shift + Mod1 + %s\n\n' "$BIN" "$k"; done
   for k in plus equal KP_Add; do printf '"%s/wmodern-resize grow large"\n    Mod4 + Shift + Mod1 + Control + %s\n\n' "$BIN" "$k"; done
   for k in minus underscore KP_Subtract; do printf '"%s/wmodern-resize shrink large"\n    Mod4 + Shift + Mod1 + Control + %s\n\n' "$BIN" "$k"; done
-  echo "# Move the focused window: Super+Shift+Alt+arrows (small), add Control (large)"
+  echo "# Move the focused window: Super+Shift+Alt+arrows 3 px, Super+Shift+Control+arrows 20 px, both 100 px"
   for k in Left Right Up Down; do
     printf '"%s/wmodern-move %s small"\n    Mod4 + Shift + Mod1 + %s\n\n' "$BIN" "${k,,}" "$k"
+    printf '"%s/wmodern-move %s medium"\n    Mod4 + Shift + Control + %s\n\n' "$BIN" "${k,,}" "$k"
     printf '"%s/wmodern-move %s large"\n    Mod4 + Shift + Mod1 + Control + %s\n\n' "$BIN" "${k,,}" "$k"
   done
 } > "$tmp"
