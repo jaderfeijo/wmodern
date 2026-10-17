@@ -31,6 +31,29 @@ makes xterm:
 | `Shift+Insert` | Paste from the CLIPBOARD. |
 | `disallowedWindowOps: 20,21,SetXprop` | Keeps xterm's dangerous window operations (reading the title and so on) off, while still letting programs *set* the clipboard with the **OSC 52** escape sequence. That is how tools such as Claude Code, tmux (`set-clipboard on`) and Neovim copy from inside a terminal, even over SSH. |
 
+## 3. Ctrl+click on a link, and the menu on right click
+
+Ctrl+click on a `scheme://...` link in xterm (or uxterm) opens it through `~/.local/bin/xterm-open-url`, which the
+installer puts there. It looks at the desktop you are on:
+
+1. A Chromium or Chrome window on **this** desktop: it raises the topmost one and opens the link as a new tab.
+2. None on this desktop: it opens a new window, which appears here.
+3. It never raises or opens anything in a window on another desktop.
+
+Without Chromium/Chrome, or without `xdotool` and `xprop` (packages `xdotool`, `x11-utils`), it falls back to
+`xdg-open`. `XTERM_OPEN_URL_BROWSER=some-chromium` picks another Chromium-based command.
+
+Ctrl+left click is also xterm's main-menu shortcut, so the menu moves to the **right mouse button** (a right click no
+longer extends the selection; Shift+right click still reaches the application when it uses the mouse). Skip either
+change with `--no-url-click` / `--no-right-menu`.
+
+Two traps if you edit these lines by hand:
+
+* `xrdb` pipes the file through `cpp`, so a literal `//` (as in `https://`) starts a comment and silently cuts the
+  value off. The regex writes it as `[/][/]`.
+* An Xt translation string cannot contain `\"` or other escaped quotes; a bad line makes xterm drop the whole
+  translation table (`uxterm -e true` prints the warning). Keep the logic in the helper script instead.
+
 ### The trap: a custom window class gets none of this
 
 xterm looks its resources up under its **class name**. A plain `xterm` has class `XTerm`, so `XTerm*selectToClipboard`
@@ -64,7 +87,7 @@ xrdb -merge ~/.Xresources
 ```
 
 `./install.sh` also runs `xrdb -merge` straight away when it can (`--no-apply` skips that). Open xterms keep their old
-settings; new ones pick the new ones up. `./install.sh --uninstall` removes the block.
+settings; new ones pick the new ones up. `./install.sh --uninstall` removes the block and the helper.
 
 ## Check
 

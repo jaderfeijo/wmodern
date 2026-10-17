@@ -23,7 +23,7 @@ check "no user name in paths" scan x "/(home|Users)/$user"
 echo "installer (modules only, in a scratch home)"
 H=$(mktemp -d); trap 'rm -rf "$H"' EXIT
 run() { env -u DISPLAY HOME="$H" XDG_CONFIG_HOME= XDG_DATA_HOME= XDG_CACHE_HOME= bash "$ROOT/install.sh" "$@" --no-sudo --no-self-update; }
-MODS="focus wmaker-randr shade-all thinkpad power lock xterm caps-lock no-welcome quiet-move workspace-name window-keys webapp chromium-scale flatpak omarchy"
+MODS="focus wmaker-randr shade-all thinkpad power lock xterm caps-lock no-welcome quiet-move workspace-name window-keys webapp chromium-scale default-browser flatpak omarchy"
 check "list works" run list
 check "dry run changes nothing" bash -c "$(declare -f run); H='$H'; ROOT='$ROOT'; run install $MODS --dry-run --yes && [ ! -e '$H/.xbindkeysrc' ] && [ ! -e '$H/.local/bin/webapp' ]"
 check "install all modules" run install $MODS --yes
@@ -38,8 +38,12 @@ check "all up to date after install" bash -c "$(declare -f run); H='$H'; ROOT='$
 sed -i 's/^focus\t[0-9a-f]*/focus\t0000000000000000000000000000000000000000/' "$H/.local/share/wmodern/installed.tsv"
 check "detects an update" bash -c "$(declare -f run); H='$H'; ROOT='$ROOT'; run list | grep -E '^focus .*update available'"
 check "update installs it" bash -c "$(declare -f run); H='$H'; ROOT='$ROOT'; run update --yes && ! run list | grep -q 'update available'"
+[ -x "$H/.local/bin/xterm-open-url" ] && grep -q 'exec-selectable' "$H/.Xresources" && grep -q 'UXTerm\*VT100.translations' "$H/.Xresources" && ok "xterm: ctrl+click opener and bindings installed" || bad "xterm ctrl+click missing"
+! grep -q '://' "$H/.Xresources" && ok "xterm: no literal // in ~/.Xresources (xrdb's cpp would cut the line off)" || bad "xterm: // in ~/.Xresources"
+check "xterm-open-url ignores text that is not a URL" env PATH=/nonexistent /bin/sh "$H/.local/bin/xterm-open-url" "not a url"
 check "remove works" run remove xterm focus shade-all omarchy --yes
 [ "$(grep -c selectToClipboard "$H/.Xresources" 2>/dev/null)" = 0 ] && ok "removed block is gone" || bad "xterm block still there"
+[ ! -e "$H/.local/bin/xterm-open-url" ] && ok "removed opener is gone" || bad "xterm-open-url left behind"
 check "unknown item is refused" bash -c "$(declare -f run); H='$H'; ROOT='$ROOT'; ! run install nonsense --yes"
 
 echo "fixed-nerd font path reaches ~/.xsessionrc (stub repository, scratch home)"

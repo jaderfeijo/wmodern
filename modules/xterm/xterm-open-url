@@ -1,0 +1,36 @@
+#!/bin/sh
+# Open a URL that was ctrl+clicked in xterm, in Chromium or Chrome on the *current* desktop:
+#   - a browser window exists on this desktop -> raise the topmost one and open a new tab in it
+#   - none on this desktop                    -> open a new window (it appears here, never on another desktop)
+# Without Chromium or Chrome, or without xdotool and xprop, it falls back to xdg-open.
+# Set XTERM_OPEN_URL_BROWSER to use another Chromium-based command.
+case "$1" in
+  *://*) ;;
+  *) exit 0 ;;
+esac
+
+browser=${XTERM_OPEN_URL_BROWSER:-}
+if [ -z "$browser" ]; then
+  for b in chromium chromium-browser google-chrome-stable google-chrome; do
+    command -v "$b" >/dev/null 2>&1 && { browser=$b; break; }
+  done
+fi
+if [ -z "$browser" ] || ! command -v xdotool >/dev/null 2>&1 || ! command -v xprop >/dev/null 2>&1; then
+  exec xdg-open "$1"
+fi
+
+cur=$(xdotool get_desktop)
+target=
+# the stacking list runs bottom to top, so the last match is the topmost window
+for w in $(xprop -root _NET_CLIENT_LIST_STACKING | sed 's/.*# //; s/,//g'); do
+  w=$((w))
+  xprop -id "$w" WM_CLASS 2>/dev/null | grep -qE '"(Chromium|Google-chrome)"' || continue
+  [ "$(xdotool get_desktop_for_window "$w" 2>/dev/null)" = "$cur" ] && target=$w
+done
+
+if [ -n "$target" ]; then
+  xdotool windowactivate --sync "$target" 2>/dev/null
+  exec "$browser" "$1"
+else
+  exec "$browser" --new-window "$1"
+fi
