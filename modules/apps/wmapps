@@ -1,0 +1,281 @@
+#!/usr/bin/env python3
+"""wmapps -- one place that knows every app installed on this machine (apt, Flatpak, Snap, web apps, AppImages, ...).
+
+Launchers (rofi drun, menus) only see what is under XDG_DATA_DIRS. wmapps works out the complete list of
+directories, applies it to whatever you start through it, and lists the apps it finds.  Usage: wmapps --help
+"""
+import json, os, re, signal, subprocess, sys
+
+HOME = os.path.expanduser("~")
+DATA_HOME = os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local/share")
+RC = os.path.join(HOME, ".xsessionrc")
+NAME = "wmapps"
+
+# Every place an installer is known to put "share/applications". Only the ones that exist are used.
+KNOWN = [
+    (DATA_HOME, "user"),
+    ("/usr/local/share", "system"),
+    ("/usr/share", "system"),
+    (os.path.join(DATA_HOME, "flatpak/exports/share"), "flatpak"),
+    ("/var/lib/flatpak/exports/share", "flatpak"),
+    ("/var/lib/snapd/desktop", "snap"),
+    (os.path.join(HOME, ".nix-profile/share"), "nix"),
+    ("/nix/var/nix/profiles/default/share", "nix"),
+    (os.path.join(HOME, ".guix-profile/share"), "guix"),
+]
+APPIMAGE_DIRS = [os.path.join(HOME, d) for d in ("Applications", "AppImages", ".local/bin", "bin")]
+WEBAPP_MARK = "X-Webapp-Source=chromium-app"   # tags the entries `webapp` writes (see modules/webapp)
+
+
+def has_apps(d):
+    return os.path.isdir(os.path.join(d, "applications"))
+
+
+def dirs():
+    """Search path: what the session already has, then every known source that exists (no duplicates)."""
+    cur = [d for d in os.environ.get("XDG_DATA_DIRS", "").split(":") if d]
+    out = []
+    for d in [DATA_HOME] + (cur or ["/usr/local/share", "/usr/share"]) + [k for k, _ in KNOWN]:
+        d = d.rstrip("/") or "/"
+        if d not in out and (d in cur or has_apps(d) or d == DATA_HOME):
+            out.append(d)
+    # XDG_DATA_DIRS must not repeat XDG_DATA_HOME (it is searched anyway)
+    return [d for d in out if d != DATA_HOME.rstrip("/")]
+
+
+def source_of(path):
+    for d, kind in KNOWN:
+        if path.startswith(d.rstrip("/") + "/"):
+            return kind
+    return "other"
+
+
+def parse(path):
+    """Fields of the [Desktop Entry] group, or None when it is not a launchable application."""
+    try:
+        text = open(path, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return None
+    ent, inside = {}, False
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("["):
+            inside = s == "[Desktop Entry]"
+        elif inside and "=" in s and not s.startswith("#"):
+            k, v = s.split("=", 1)
+            if "[" not in k:                 # skip translated keys
+                ent.setdefault(k.strip(), v.strip())
+    if ent.get("Type") != "Application" or not ent.get("Name") or not ent.get("Exec"):
+        return None
+    ent["_web"] = WEBAPP_MARK in text
+    return ent
+
+
+def shown(ent):
+    """The rules rofi's drun applies: NoDisplay, Hidden, OnlyShowIn / NotShowIn."""
+    if ent.get("NoDisplay", "").lower() == "true" or ent.get("Hidden", "").lower() == "true":
+        return False
+    cur = [x for x in os.environ.get("XDG_CURRENT_DESKTOP", "").split(":") if x]
+    only = [x for x in ent.get("OnlyShowIn", "").split(";") if x]
+    notin = [x for x in ent.get("NotShowIn", "").split(";") if x]
+    if only and cur and not set(only) & set(cur):
+        return False
+    return not (notin and set(notin) & set(cur))
+
+
+def apps():
+    """Every launchable app, first directory wins (the same override rule as the desktop spec)."""
+    seen, out = set(), []
+    for d in [DATA_HOME] + dirs():
+        root = os.path.join(d, "applications")
+        for dp, _, files in os.walk(root):
+            for f in sorted(files):
+                if not f.endswith(".desktop"):
+                    continue
+                p = os.path.join(dp, f)
+                did = os.path.relpath(p, root).replace("/", "-")
+                if did in seen:
+                    continue
+                seen.add(did)
+                ent = parse(p)
+                if ent is None:
+                    continue
+                src = "web" if ent["_web"] else source_of(p)
+                out.append({"id": did[:-8], "name": ent["Name"], "comment": ent.get("Comment", ""), "exec": ent["Exec"],
+                            "source": src, "file": p, "shown": shown(ent), "terminal": ent.get("Terminal", "").lower() == "true"})
+    return sorted(out, key=lambda a: a["name"].lower())
+
+
+def appimages():
+    found = []
+    for d in APPIMAGE_DIRS:
+        try:
+            names = sorted(os.listdir(d))
+        except OSError:
+            continue
+        for n in names:
+            p = os.path.join(d, n)
+            if re.search(r"\.appimage$", n, re.I) and os.access(p, os.X_OK):
+                found.append(p)
+    return found
+
+
+def listed_execs(listing):
+    return " ".join(a["exec"] for a in listing)
+
+
+# ------------------------------------------------------------------------------------------------ commands
+def cmd_dirs(_):
+    print("\n".join(dirs()))
+
+
+def cmd_env(_):
+    print("export XDG_DATA_DIRS='%s'" % ":".join(dirs()))
+
+
+def cmd_exec(args):
+    if not args:
+        sys.exit("wmapps: exec needs a command")
+    os.environ["XDG_DATA_DIRS"] = ":".join(dirs())
+    try:
+        os.execvp(args[0], args)
+    except OSError as e:
+        sys.exit("wmapps: %s: %s" % (args[0], e.strerror))
+
+
+def cmd_launch(args):
+    cmd_exec(["rofi", "-show", args[0] if args else "drun"])
+
+
+def cmd_list(args):
+    listing = apps()
+    if "--all" not in args:
+        listing = [a for a in listing if a["shown"]]
+    src = next((args[i + 1] for i, a in enumerate(args) if a == "--source" and i + 1 < len(args)), None)
+    if src:
+        listing = [a for a in listing if a["source"] == src]
+    if "--json" in args:
+        print(json.dumps(listing, indent=2))
+        return
+    for a in listing:
+        print("%-9s %-32s %s" % (a["source"], a["name"][:32], a["id"]))
+    print("\n%d apps" % len(listing), file=sys.stderr)
+
+
+def run(*cmd):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=30).stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def cmd_doctor(_):
+    """Look for apps that are installed but would not show in the launcher, and say why."""
+    problems = 0
+    cur = [d.rstrip("/") for d in os.environ.get("XDG_DATA_DIRS", "").split(":") if d]
+    want = dirs()
+    print("Application directories (and whether this shell's XDG_DATA_DIRS has them):")
+    for d in [DATA_HOME] + want:
+        if not has_apps(d):
+            continue
+        n = sum(1 for f in os.listdir(os.path.join(d, "applications")) if f.endswith(".desktop"))
+        ok = d.rstrip("/") == DATA_HOME.rstrip("/") or d.rstrip("/") in cur
+        print("  %-44s %3d entries   %s" % (d, n, "yes" if ok else "NO"))
+        problems += not ok
+    wm = ""
+    try:
+        pid = run("pgrep", "-xo", "-u", str(os.getuid()), "wmaker|WindowMaker").strip()
+        if pid:
+            wm = next((l[len("XDG_DATA_DIRS="):] for l in open("/proc/%s/environ" % pid).read().split("\0")
+                       if l.startswith("XDG_DATA_DIRS=")), "")
+    except OSError:
+        pass
+    if wm:
+        miss = [d for d in want if has_apps(d) and d not in wm.split(":") and d != DATA_HOME]
+        if miss:
+            problems += 1
+            print("\nThe running session (Window Maker) does not have: %s\n"
+                  "  Launchers started from it cannot see those apps. Fix for future logins: wmapps fix" % ", ".join(miss))
+    listing = apps()
+    shown_ids = {a["id"] for a in listing if a["shown"]}
+    print()
+    snaps = [l.split()[0] for l in run("snap", "list").splitlines()[1:] if l.strip()] if os.path.exists("/usr/bin/snap") or os.path.exists("/snap/bin/snap") else []
+    for s in snaps:
+        if s in ("bare", "snapd") or re.match(r"(core|gnome-|gtk-|mesa-|kf5-|qt)", s):
+            continue
+        if not any(i.startswith(s + "_") for i in shown_ids):
+            print("  snap %s has no launcher entry (a command-line snap, or its desktop file is missing)" % s)
+    fp = [l.split("\t")[0] for l in run("flatpak", "list", "--app", "--columns=application").splitlines() if l.strip()] if os.path.exists("/usr/bin/flatpak") else []
+    for f in fp:
+        if f not in shown_ids:
+            problems += 1
+            print("  flatpak %s has no launcher entry" % f)
+    text = listed_execs(listing)
+    for p in appimages():
+        if p not in text:
+            problems += 1
+            print("  AppImage %s has no launcher entry" % p)
+    by_src = {}
+    for a in listing:
+        if a["shown"]:
+            by_src[a["source"]] = by_src.get(a["source"], 0) + 1
+    print("\nLaunchable apps by source: " + ", ".join("%s %d" % kv for kv in sorted(by_src.items())))
+    print("Everything is visible." if not problems else "%d problem(s) above." % problems)
+
+
+FIX_BLOCK = '''# One list of application directories (apt, Flatpak, Snap, ...) for launchers in this X session
+if [ -x "$HOME/.local/bin/wmapps" ]; then
+  eval "$("$HOME/.local/bin/wmapps" env 2>/dev/null)"
+fi'''
+
+
+def block(action):
+    b, e = "# >>> %s >>>" % NAME, "# <<< %s <<<" % NAME
+    t = open(RC).read() if os.path.exists(RC) else ""
+    t = re.sub(r"(?ms)^" + re.escape(b) + r"\n.*?^" + re.escape(e) + r"\n?", "", t).strip("\n")
+    if action == "add":
+        t = (t + "\n\n" if t else "") + "%s\n%s\n%s" % (b, FIX_BLOCK, e)
+    return t
+
+
+def cmd_fix(args):
+    new = block("add")
+    if "--dry-run" in args:
+        print("[dry-run] would write this block to %s:\n%s" % (RC, FIX_BLOCK))
+        return
+    open(RC, "w").write(new + "\n")
+    print("Added to %s. Log out and in once; until then use: wmapps launch" % RC)
+
+
+def cmd_unfix(args):
+    if os.path.exists(RC):
+        t = block("remove")
+        if "--dry-run" not in args:
+            open(RC, "w").write(t + "\n" if t else "")
+    print("Removed the %s block from %s." % (NAME, RC))
+
+
+HELP = """wmapps -- one list of every installed app, for launchers
+
+  wmapps dirs               the application directories (apt, Flatpak, Snap, Nix, ...) that exist on this machine
+  wmapps env                `export XDG_DATA_DIRS=...` with all of them; use: eval "$(wmapps env)"
+  wmapps exec CMD...        run CMD with the complete XDG_DATA_DIRS (works now, without logging in again)
+  wmapps launch [MODE]      the app launcher (rofi drun) with every app visible
+  wmapps list [--all] [--source S] [--json]
+                            every launchable app and where it came from (system, flatpak, snap, web, user, ...)
+  wmapps doctor             apps that are installed but would not show in the launcher, and why
+  wmapps fix [--dry-run]    add a marked block to ~/.xsessionrc so every future login has the complete list
+  wmapps unfix              remove that block again
+"""
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)      # `wmapps list | head` must not print a traceback
+    a = sys.argv[1:]
+    cmds = {"dirs": cmd_dirs, "env": cmd_env, "exec": cmd_exec, "launch": cmd_launch, "list": cmd_list,
+            "doctor": cmd_doctor, "fix": cmd_fix, "unfix": cmd_unfix}
+    if not a or a[0] in ("-h", "--help", "help"):
+        sys.stdout.write(HELP)
+    elif a[0] in cmds:
+        cmds[a[0]](a[1:])
+    else:
+        sys.exit("wmapps: unknown command '%s' (see wmapps --help)" % a[0])

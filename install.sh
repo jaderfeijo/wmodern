@@ -49,6 +49,7 @@ CATALOGUE=(
 "chromium-scale|module|chromium-scale|chromium python3|Smaller Chromium|Chromium's own interface and every web page at 80% (20% smaller than stock), through its launcher. Quit Chromium and start it again."
 "default-browser|module|default-browser|xdg-utils chromium|Chromium as default browser|Links open in Chromium everywhere: xdg-settings, the Xfce helper and the x-www-browser alternative (sudo). Remove puts the old values back."
 "flatpak|module|flatpak|flatpak xdg-utils python3|Flatpak in the session|The 'flatpak-wm' command; makes Flatpak apps and slack:// style sign-in links work, for future logins."
+"apps|module|apps|python3 rofi|All apps in the launcher|The 'wmapps' command: one list of every installed app (apt, Flatpak, Snap, web apps, ...) that the launcher uses; adds Snap's and other missing directories for future logins."
 "pwvol|repo|wmpwvol|python3-cairo pipewire-bin wireplumber|Volume dockapp|PipeWire volume dockapp: live meter, mute, scroll to change. Drag its icon into the Dock once."
 "bluetooth|repo|wmbluetooth|python3-cairo python3-gi bluez rofi|Bluetooth dockapp|Connected Bluetooth devices and their batteries; click to connect. Drag its icon into the Dock once."
 "battery|repo|wmbattery-power-draw||Battery dockapp with watts|Debian's wmbattery, built with a patch that shows the power draw in watts. Builds from source (sudo for build tools)."
@@ -199,6 +200,7 @@ do_install() {  # runs inside the component's checkout
     webapp)     ./install.sh $dry ;;
     chromium-scale) ./install.sh $dry ;;
     default-browser) local extra=(); [ "$SUDO_OK" = 1 ] || extra+=(--no-system); ./install.sh $dry "${extra[@]}" ;;
+    apps)       ./install.sh $dry ;;
     flatpak)    ./install.sh $dry; if [ "$DRY" = 1 ]; then say "  [dry-run] flatpak-wm fix"; else "$BIN/flatpak-wm" fix; fi ;;
     pwvol|bluetooth)
       if [ "$DRY" = 1 ]; then say "  [dry-run] make install PREFIX=\$HOME/.local   (and add $id to the Window Maker autostart file)"
@@ -227,7 +229,7 @@ do_remove() {
     quiet-move) ./install.sh --uninstall $dry ;;
     workspace-name) ./install.sh --uninstall $dry ;;
     fixed-nerd) ./install.sh --uninstall --no-apply $dry; fixed_nerd_fontpath remove ;;
-    webapp|flatpak|chromium-scale) ./install.sh --uninstall $dry ;;
+    webapp|flatpak|chromium-scale|apps) ./install.sh --uninstall $dry ;;
     default-browser) local extra=(); [ "$SUDO_OK" = 1 ] || extra+=(--no-system); ./install.sh --uninstall $dry "${extra[@]}" ;;
     pwvol|bluetooth)
       local n=wm$id

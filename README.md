@@ -54,6 +54,7 @@ To look first: add `-s -- --dry-run` after `bash`, or read [`install.sh`](instal
 | [`default-browser`](modules/default-browser) | **Chromium as the default browser** in all three places a link can look (`xdg-settings`, the Xfce helper, the `x-www-browser` alternative); remove restores the old values. |
 | [`chromium-scale`](modules/chromium-scale) | **Smaller Chromium**: its interface and every web page at 80% (20% smaller than stock) with `--force-device-scale-factor`, through the launcher; any value from 25 to 300. |
 | [`flatpak`](modules/flatpak) | **Flatpak in the session**: launcher visibility and `slack://`-style sign-in links. |
+| [`apps`](modules/apps) | **All apps in the launcher**: `wmapps` is one list of every installed app (apt, Flatpak, Snap, web apps, Nix, ...); the launcher asks it, `wmapps doctor` says what would not show and why, and a session block adds the missing directories (Snap's, for one) at every login. |
 | [`omarchy`](modules/omarchy) | **Omarchy ports**: Omarchy's web-app and TUI launcher installers (unmodified), a searchable web-app catalog and fzf pickers for apt and Flatpak, adapted to Window Maker. |
 | [`pwvol`](https://github.com/jaderfeijo/wmpwvol) | **Volume dockapp** for PipeWire: live level meter, red crossed-out speaker when muted. |
 | [`bluetooth`](https://github.com/jaderfeijo/wmbluetooth) | **Bluetooth dockapp**: connected devices and their batteries; click to connect. |

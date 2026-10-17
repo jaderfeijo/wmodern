@@ -11,7 +11,8 @@ The launcher (`Super+Space`, rofi `drun`) lists only `.desktop` files. An app th
 * Apps the **user** installs later must show up there too, whichever way they were installed: apt, Flatpak, Snap, web
   apps (`webapp`), TUIs (`omarchy`), `getapp`. When a module installs through a mechanism that puts its entries
   somewhere the launcher does not look (Flatpak's export directories, Snap's), the module makes the launcher see them
-  (see `modules/flatpak`: `XDG_DATA_DIRS`) and the test suite checks it.
+  (see `modules/flatpak` and `modules/apps`: `XDG_DATA_DIRS`) and the test suite checks it. `wmapps` (`modules/apps`) is the
+  one list of application directories: a new source (a new package manager) is added to its `KNOWN` list, not to the launcher.
 * New module or new installer path: check, in the tests or by hand with `rofi -show drun`, that the entry appears.
   A module without a launchable app (key bindings, settings only) needs nothing.
 * Companion tools that live in their own repositories (`wm-theme`/Appearance.app, DisplayScaling.app, the dockapps)
