@@ -4,10 +4,18 @@
 #   POWER_MENU_LOGOUT   command that ends the session (default: ask Window Maker to exit cleanly)
 ROFI=${ROFI:-rofi}
 LOGOUT=${POWER_MENU_LOGOUT:-pkill -TERM -x wmaker}
-choice=$(printf '%s\n' "Lock" "Suspend" "Log out" "Restart" "Shut down" | $ROFI -dmenu -i -p power -lines 5 -no-custom) || exit 0
+
+# Hibernate is listed only when logind says it can work (needs swap and a resume device).
+can_hibernate=$(busctl call org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager CanHibernate 2>/dev/null)
+entries="Lock\nSuspend\n"
+[ "$can_hibernate" = 's "yes"' ] && entries="${entries}Hibernate\n"
+entries="${entries}Log out\nRestart\nShut down"
+
+choice=$(printf "$entries\n" | $ROFI -dmenu -i -p power -no-custom) || exit 0
 case "$choice" in
   Lock)        loginctl lock-session ;;
   Suspend)     systemctl suspend ;;
+  Hibernate)   systemctl hibernate ;;
   "Log out")   sh -c "$LOGOUT" ;;
   Restart)     systemctl reboot ;;
   "Shut down") systemctl poweroff ;;

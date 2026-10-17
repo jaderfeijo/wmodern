@@ -1,8 +1,8 @@
-# Window Maker: a power-button menu (lock, suspend, log out, restart, shut down)
+# Window Maker: a power-button menu (lock, suspend, hibernate, log out, restart, shut down)
 
 > Module `power` of [wmodern](https://github.com/jaderfeijo/wmodern): install it with `wmodern install power`, or use it on its own as described below.
 
-Press the laptop's power button and a rofi menu pops up: **Lock, Suspend, Log out, Restart, Shut down**. Press it
+Press the laptop's power button and a rofi menu pops up: **Lock, Suspend, Hibernate, Log out, Restart, Shut down**. Press it
 again to close the menu. Without this, systemd's default on a window manager is to power the machine off the moment
 you touch the button.
 
@@ -69,5 +69,5 @@ Needs `rofi` and `acpid` (`sudo apt install rofi acpid`).
 | `ROFI` | `rofi` | the menu program (anything that reads lines on stdin and prints the choice, e.g. `dmenu`-style, also works if the arguments suit it) |
 | `POWER_MENU_LOGOUT` | `pkill -TERM -x wmaker` | command for the *Log out* entry |
 
-Edit the five entries at the top of `power-menu`. Lock uses `loginctl lock-session`; see the separate `lock` module
+Hibernate is listed only when logind reports it as available (`CanHibernate` is `yes`: swap and a resume device are set up). Edit the entries at the top of `power-menu`. Lock uses `loginctl lock-session`; see the separate `lock` module
 (linked from the directory) for a screen locker that reacts to it.
