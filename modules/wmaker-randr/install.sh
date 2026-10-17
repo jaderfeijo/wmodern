@@ -12,6 +12,7 @@ URL=https://github.com/window-maker/wmaker.git
 REF=535288cec55e99371f0996da9a12c1744a8a0f62       # a tested upstream commit; --ref master follows upstream
 XSESSIONRC="$HOME/.xsessionrc"
 DEFAULTS="${GNUSTEP_USER_ROOT:-$HOME/GNUstep}/Defaults/WindowMaker"
+STAMP_SUFFIX="+desk-names"                        # the build is the commit plus our patch (see below)
 DRY=0 UNINSTALL=0 JOBS=$(nproc 2>/dev/null || echo 2)
 
 while [ $# -gt 0 ]; do
@@ -70,7 +71,7 @@ if [ "$DRY" = 1 ]; then
   echo "[dry-run] set KeepDockOnPrimaryHead = YES in $DEFAULTS"; exit 0
 fi
 
-if [ -x "$PREFIX/bin/wmaker" ] && [ "$(cat "$PREFIX/.wmodern-rev" 2>/dev/null)" = "$REF" ]; then
+if [ -x "$PREFIX/bin/wmaker" ] && [ "$(cat "$PREFIX/.wmodern-rev" 2>/dev/null)" = "$REF$STAMP_SUFFIX" ]; then
   echo "Window Maker $REF is already built; skipping the build."
   install -D -m 755 "$HERE/wmaker" "$BIN/wmaker"; xsession_block add
   echo "Installed $BIN/wmaker and the PATH line in $XSESSIONRC."; exit 0
@@ -81,12 +82,15 @@ git -C "$CACHE" fetch -q origin "$REF" 2>/dev/null || git -C "$CACHE" fetch -q o
 git -C "$CACHE" checkout -q --force "$REF" 2>/dev/null || git -C "$CACHE" checkout -q --force "origin/$REF"
 cd "$CACHE"
 git clean -qfdx
+# New workspaces are called "Desk 2", "Desk 3", ... instead of "Workspace 2" (the name is only a format string)
+sed -i 's/_("Workspace %i")/_("Desk %i")/' src/workspace.c
+grep -q '_("Desk %i")' src/workspace.c
 ./autogen.sh >/dev/null 2>&1
 ./configure --prefix="$PREFIX" --sysconfdir="$PREFIX/etc" --enable-randr >/dev/null
 make -j"$JOBS" >/dev/null
 make install >/dev/null
 "$PREFIX/bin/wmaker" --version >/dev/null
-echo "$REF" > "$PREFIX/.wmodern-rev"
+echo "$REF$STAMP_SUFFIX" > "$PREFIX/.wmodern-rev"
 install -D -m 755 "$HERE/wmaker" "$BIN/wmaker"
 xsession_block add
 

@@ -33,3 +33,9 @@ right, and moves the Dock to the primary head when `KeepDockOnPrimaryHead` is on
 
 The running Window Maker is the old binary and cannot be swapped for the new one from outside: log out and in once.
 After that, monitor changes need no restart.
+
+## Desk names
+
+The build carries one small patch: new workspaces are called `Desk 2`, `Desk 3`, ... instead of `Workspace 2`
+(`src/workspace.c`, `_("Workspace %i")` becomes `_("Desk %i")`; the first one is already `Desk 1`). Names you gave
+yourself, and workspaces that already exist in `WMState`, are not touched; rename those from the Workspaces menu.
