@@ -51,7 +51,7 @@ import os, re, sys
 path, content, name = sys.argv[1:4]
 b, e = f"# >>> {name} >>>", f"# <<< {name} <<<"
 t = open(path).read() if os.path.exists(path) else ""
-t = re.sub(r"(?ms)^" + re.escape(b) + r"\n.*?^" + re.escape(e) + r"\n?", "", t).rstrip("\n")
+t = re.sub(r"(?ms)^" + re.escape(b) + r"\n.*?^" + re.escape(e) + r"\n?", "", t).strip("\n")
 open(path, "w").write((t + "\n\n" if t else "") + f"{b}\n{open(content).read().rstrip()}\n{e}\n")
 PY
   echo "Added to $RC. Log out and in once; until then, start launchers with:  flatpak-wm env <command>"

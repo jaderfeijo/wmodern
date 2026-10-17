@@ -37,7 +37,7 @@ action, path = sys.argv[1:3]
 begin, end = "# >>> wmodern:wmaker-randr >>>", "# <<< wmodern:wmaker-randr <<<"
 text = open(path).read() if os.path.exists(path) else ""
 text = re.sub(r"(?ms)^" + re.escape(begin) + r"\n.*?^" + re.escape(end) + r"\n?", "", text)
-text = re.sub(r"\n{3,}", "\n\n", text)
+text = re.sub(r"\n{3,}", "\n\n", text).lstrip("\n")   # a block removed from the top must not leave blank lines
 if action == "add":
     text = text.rstrip("\n") + ("\n\n" if text.strip() else "") + begin + "\n" + \
         "# Start the RandR-aware Window Maker from ~/.local/bin instead of Debian's\n" + \
