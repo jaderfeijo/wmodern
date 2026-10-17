@@ -1,0 +1,32 @@
+#!/bin/sh
+# wmodern-move left|right|up|down small|large -- move the focused window (small = 20 px, large = 100 px, or set
+# WMODERN_MOVE_SMALL / WMODERN_MOVE_LARGE). The window stays on the screen.
+dir=${1:-}; size=${2:-small}
+case $size in small) d=${WMODERN_MOVE_SMALL:-20} ;; large) d=${WMODERN_MOVE_LARGE:-100} ;; *) dir= ;; esac
+case $dir in left) dx=-$d dy=0 ;; right) dx=$d dy=0 ;; up) dx=0 dy=-$d ;; down) dx=0 dy=$d ;;
+  *) echo "usage: wmodern-move left|right|up|down small|large" >&2; exit 2 ;; esac
+
+win=$(xprop -root _NET_ACTIVE_WINDOW | grep -o "0x[0-9a-f]*")
+[ -n "$win" ] && [ "$win" != 0x0 ] || exit 0
+xprop -id "$win" _NET_WM_STATE | grep -q 'FULLSCREEN' && exit 0
+read -r fl fr ft fb <<EOT
+$(xprop -id "$win" _NET_FRAME_EXTENTS | grep -o '[0-9]\+' | tr '\n' ' ')
+EOT
+fl=${fl:-0}; fr=${fr:-0}; ft=${ft:-0}; fb=${fb:-0}
+read -r W H <<EOT
+$(wmctrl -d | awk '/\*/{split($4,a,"x"); print a[1], a[2]}')
+EOT
+read -r x y w h <<EOT
+$(xwininfo -id "$win" | awk -v fl="$fl" -v ft="$ft" -v fr="$fr" -v fb="$fb" \
+  '/Absolute upper-left X/{x=$4} /Absolute upper-left Y/{y=$4} /Width:/{w=$2} /Height:/{h=$2}
+   END{print x-fl, y-ft, w+fl+fr, h+ft+fb}')
+EOT
+nx=$((x + dx)); ny=$((y + dy))
+[ $((nx + w)) -gt "$W" ] && nx=$((W - w)); [ $((ny + h)) -gt "$H" ] && ny=$((H - h))
+[ "$nx" -lt 0 ] && nx=0; [ "$ny" -lt 0 ] && ny=0
+
+# A window with Static gravity (Chromium) is placed by its client area, not its frame: without this correction every
+# move walks it up by the title bar's height and the title bar ends up above the screen.
+ox=0; oy=0
+xprop -id "$win" WM_NORMAL_HINTS | grep -q 'window gravity: Static' && { ox=$((fl - 1)); oy=$((ft - 1)); }  # Window Maker adds its 1 px border to what it is given
+wmctrl -i -r "$win" -e "0,$((nx + ox)),$((ny + oy)),$((w - fl - fr)),$((h - ft - fb))"

@@ -23,7 +23,7 @@ check "no user name in paths" scan x "/(home|Users)/$user"
 echo "installer (modules only, in a scratch home)"
 H=$(mktemp -d); trap 'rm -rf "$H"' EXIT
 run() { env -u DISPLAY HOME="$H" XDG_CONFIG_HOME= XDG_DATA_HOME= XDG_CACHE_HOME= bash "$ROOT/install.sh" "$@" --no-sudo --no-self-update; }
-MODS="focus shade-all thinkpad power lock xterm webapp flatpak omarchy"
+MODS="focus window-keys shade-all thinkpad power lock xterm webapp flatpak omarchy"
 check "list works" run list
 check "dry run changes nothing" bash -c "$(declare -f run); H='$H'; ROOT='$ROOT'; run install $MODS --dry-run --yes && [ ! -e '$H/.xbindkeysrc' ] && [ ! -e '$H/.local/bin/webapp' ]"
 check "install all modules" run install $MODS --yes

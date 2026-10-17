@@ -41,6 +41,7 @@ To look first: add `-s -- --dry-run` after `bash`, or read [`install.sh`](instal
 | [`focus`](modules/focus) | **Focus follows mouse** with instant auto-raise, and the gotcha that Window Maker must be restarted to read it. |
 | [`shade-all`](modules/shade-all) | **Shade all windows**: one key rolls up every window on the desktop to its title bar, again to unroll. Takes `Super+Shift+H` from the show-desktop binding of `super-keys` (the installer handles that). |
 | [`thinkpad`](modules/thinkpad) | **Lenovo ThinkPad keys**: brightness, volume, mute and microphone-mute with an on-screen bar, mute LEDs, tap-to-click for the touchpad. |
+| [`window-keys`](modules/window-keys) | **Super+Q and window keys**: Super+Q closes the window, also the highlighted one in the Super+Tab switcher; Super+Shift+Alt `+`/`-` resize it around its centre and Super+Shift+Alt+arrows move it (Control for bigger steps). |
 | [`power`](modules/power) | **Power-button menu** (lock, suspend, log out, restart, shut down) through `acpid` and rofi. |
 | [`lock`](modules/lock) | **Lock on suspend** and on `loginctl lock-session`, with `xss-lock` and `i3lock`. |
 | [`xterm`](modules/xterm) | **xterm clipboard** that works (Ctrl+Shift+C/V, Super+C/V, OSC 52) and an optional text scale (`Xft.dpi`), with the custom-window-class trap explained. |

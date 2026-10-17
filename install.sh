@@ -31,6 +31,7 @@ DRY=0 YES=0 SUDO_OK=1 CMD=menu IDS=() NO_SELF=0 LOCAL=0
 CATALOGUE=(
 "super-keys|repo|wmaker-super-keys|xbindkeys wmctrl x11-utils python3 rofi|macOS-style Super keys|Super+Space launcher, Super+1..9 desktops, tiling, focus by direction, show desktop, lock key. Also changes some of Window Maker's own shortcuts (undone by remove)."
 "focus|module|focus|python3 python3-xlib|Focus follows mouse|Focus follows the pointer and the window under it is raised at once. Takes effect when Window Maker is next started."
+"window-keys|module|window-keys|wmctrl x11-utils xbindkeys python3|Super+Q and window keys|Super+Q closes the window (also the highlighted one in the Super+Tab switcher); Super+Shift+Alt +/- resize around the centre and Super+Shift+Alt+arrows move it; add Control for big steps."
 "shade-all|module|shade-all|wmctrl x11-utils xbindkeys python3|Shade all windows|One key rolls up every window on the desktop to its title bar; press again to unroll. Uses Super+Shift+H."
 "thinkpad|module|thinkpad|xbindkeys brightnessctl dunst libnotify-bin wireplumber xinput|ThinkPad keys|Brightness, volume, mute and mic-mute keys with an on-screen bar, plus touchpad tap-to-click. For Lenovo ThinkPads."
 "power|module|power|rofi acpid python3|Power-button menu|The power button opens a menu: lock, suspend, log out, restart, shut down. Needs sudo for a few files in /etc."
@@ -144,6 +145,7 @@ do_install() {  # runs inside the component's checkout
   case $id in
     super-keys) local extra=(); installed_or_planned xterm && extra+=(--no-xterm); installed_or_planned shade-all && extra+=(--no-show-desktop); ./install.sh --no-restart $dry "${extra[@]}" ;;
     focus)      ./focus-follows-mouse.sh $dry ;;
+    window-keys) ./install.sh --no-restart --skip-deps-check $dry ;;
     shade-all)  ./install.sh --no-restart --skip-deps-check $dry ;;
     omarchy)    ./install.sh --skip-deps-check $dry ;;
     thinkpad)   ./setup.sh --no-restart --skip-deps-check $dry ;;
@@ -166,6 +168,7 @@ do_remove() {
   case $id in
     super-keys) ./install.sh --uninstall --no-restart $dry ;;
     focus)      ./focus-follows-mouse.sh --click-to-focus $dry ;;
+    window-keys) ./install.sh --uninstall --no-restart --skip-deps-check $dry ;;
     shade-all)  ./install.sh --uninstall --no-restart --skip-deps-check $dry ;;
     omarchy)    ./install.sh --uninstall $dry ;;
     thinkpad)   ./setup.sh --uninstall --no-restart --skip-deps-check $dry ;;
