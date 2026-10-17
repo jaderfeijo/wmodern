@@ -42,6 +42,7 @@ CATALOGUE=(
 "caps-lock|module|caps-lock|python3 x11-xkb-utils|Normal Caps Lock|Debian's Window Maker turns Caps Lock into the Compose key at every login; this takes that off again, for good, and keeps your other keyboard options."
 "no-welcome|module|no-welcome|python3|No welcome window|Switches off the welcome window that Debian's Window Maker live packages show at every login (moved to AutoStart/Disabled; undone by remove)."
 "window-keys|module|window-keys|wmctrl x11-utils xbindkeys python3|Super+Q and resize keys|Super+Q closes the window (also the highlighted one in the Super+Tab switcher); Super+Shift+Alt +/- resize around the centre and Super+Shift+Alt+arrows move it; add Control for big steps."
+"hide-key|module|hide-key|python3|Hide key (keeps Super+H for shade)|Moves the key that hides a whole application off Super+H (default Alt+H, or none: ./install.sh --key KEY / --none inside modules/hide-key), so Super+H only shades the focused window."
 "quiet-move|module|quiet-move|python3|No move tooltip|Hides the position box Window Maker shows while you drag a window. Takes effect when Window Maker is next started."
 "workspace-name|module|workspace-name|python3|Workspace name flash|Flashes the name of the workspace in the centre of the screen when you switch workspaces. Takes effect when Window Maker is next started."
 "fixed-nerd|repo|fixed-nerd|xfonts-utils x11-xserver-utils python3|Fixed Nerd font|The classic X11 'fixed' 6x13 font with Powerline and Nerd Font icons and TUI symbols, as the default font of xterm and uxterm. Used by new terminals."
@@ -195,6 +196,7 @@ do_install() {  # runs inside the component's checkout
     no-welcome) ./install.sh $dry ;;
     window-keys) ./install.sh --no-restart --skip-deps-check $dry ;;
     quiet-move) ./install.sh $dry ;;
+    hide-key)   ./install.sh $dry ;;
     workspace-name) ./install.sh $dry ;;
     fixed-nerd) ./install.sh --no-apply $dry; fixed_nerd_fontpath add ;;
     webapp)     ./install.sh $dry ;;
@@ -227,6 +229,7 @@ do_remove() {
     no-welcome) ./install.sh --uninstall $dry ;;
     window-keys) ./install.sh --uninstall --no-restart --skip-deps-check $dry ;;
     quiet-move) ./install.sh --uninstall $dry ;;
+    hide-key)   ./install.sh --uninstall $dry ;;
     workspace-name) ./install.sh --uninstall $dry ;;
     fixed-nerd) ./install.sh --uninstall --no-apply $dry; fixed_nerd_fontpath remove ;;
     webapp|flatpak|chromium-scale|apps) ./install.sh --uninstall $dry ;;
