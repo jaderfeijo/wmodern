@@ -23,6 +23,8 @@ OLD_STATE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/wmaker-customise"
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/$SELF_NAME"
 STATE="$STATE_DIR/installed.tsv"                       # id <TAB> revision <TAB> date
 AUTOSTART="${GNUSTEP_USER_ROOT:-$HOME/GNUstep}/Library/WindowMaker/autostart"
+XSESSIONRC="$HOME/.xsessionrc"                         # run by the login manager before Window Maker starts
+REPO_BASE="${WMC_REPO_BASE:-https://github.com/jaderfeijo}"
 
 DRY=0 YES=0 SUDO_OK=1 CMD=menu IDS=() NO_SELF=0 LOCAL=0
 
@@ -66,7 +68,7 @@ warn() { printf '%s%s%s\n' "$Y" "$*" "$N" >&2; }
 die() { printf '%s%s%s\n' "$R" "$*" "$N" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
-url_of() { echo "https://github.com/jaderfeijo/${SRC[$1]}.git"; }          # for kind=repo
+url_of() { echo "$REPO_BASE/${SRC[$1]}.git"; }          # for kind=repo
 WM_SRC=""                                                                  # where modules/ lives (set by locate_src)
 src_dir() { if [ "${KIND[$1]}" = module ]; then echo "$WM_SRC/modules/${SRC[$1]}"; else echo "$CACHE_DIR/src/$1"; fi; }
 
@@ -121,6 +123,34 @@ PY
   [ -f "$2" ] && head -c 2 "$2" | grep -q '^#!' && chmod +x "$2" || true
 }
 
+# A marked block in ~/.xsessionrc. Unlike the autostart file, this runs before the session restore starts the saved
+# windows, so whatever those windows need at startup (the font path for xterm) is already there.
+xsession_block() {  # xsession_block add|remove NAME [CONTENT]
+  [ "$DRY" = 1 ] && { say "  [dry-run] $1 block '$2' in $XSESSIONRC"; return 0; }
+  python3 - "$1" "$XSESSIONRC" "$2" "${3:-}" <<'PY'
+import os, re, sys
+action, path, name, content = sys.argv[1:5]
+begin, end = f"# >>> {name} >>>", f"# <<< {name} <<<"
+text = open(path).read() if os.path.exists(path) else ""
+text = re.sub(r"(?ms)^" + re.escape(begin) + r"\n.*?^" + re.escape(end) + r"\n?", "", text)
+text = re.sub(r"\n{3,}", "\n\n", text).lstrip("\n")   # other installers' blocks leave blank lines; keep the file stable
+if action == "add":
+    text = text.rstrip("\n") + ("\n\n" if text.strip() else "") + f"{begin}\n{content.rstrip()}\n{end}\n"
+elif not text.strip():
+    sys.exit(0)
+open(path, "w").write(text)
+PY
+}
+
+# Fixed Nerd is a bitmap font on the X font path. Its own installer adds it to the autostart file, which runs too late
+# for a restored uxterm: it opens first, cannot find the font and falls back to the default one.
+fixed_nerd_fontpath() {  # add|remove
+  local d='${XDG_DATA_HOME:-$HOME/.local/share}/fonts/X11/fixed-nerd'
+  xsession_block "$1" "$SELF_NAME:fixed-nerd" "# Fixed Nerd on the X font path before the session restore starts its terminals
+d=\"$d\"
+[ -d \"\$d\" ] && { xset -fp \"\$d\" 2>/dev/null; xset +fp \"\$d\" && xset fp rehash; } >/dev/null 2>&1"
+}
+
 remote_rev() { if [ "${KIND[$1]}" = module ]; then module_rev "$1"; else git ls-remote "$(url_of "$1")" HEAD 2>/dev/null | awk '{print $1; exit}'; fi; }
 
 fetch_src() {  # clone or update the cached checkout of component $1; prints nothing, sets FETCHED_REV
@@ -164,7 +194,7 @@ do_install() {  # runs inside the component's checkout
     window-keys) ./install.sh --no-restart --skip-deps-check $dry ;;
     quiet-move) ./install.sh $dry ;;
     workspace-name) ./install.sh $dry ;;
-    fixed-nerd) ./install.sh --no-apply $dry ;;
+    fixed-nerd) ./install.sh --no-apply $dry; fixed_nerd_fontpath add ;;
     webapp)     ./install.sh $dry ;;
     chromium-scale) ./install.sh $dry ;;
     flatpak)    ./install.sh $dry; if [ "$DRY" = 1 ]; then say "  [dry-run] flatpak-wm fix"; else "$BIN/flatpak-wm" fix; fi ;;
@@ -194,7 +224,7 @@ do_remove() {
     window-keys) ./install.sh --uninstall --no-restart --skip-deps-check $dry ;;
     quiet-move) ./install.sh --uninstall $dry ;;
     workspace-name) ./install.sh --uninstall $dry ;;
-    fixed-nerd) ./install.sh --uninstall --no-apply $dry ;;
+    fixed-nerd) ./install.sh --uninstall --no-apply $dry; fixed_nerd_fontpath remove ;;
     webapp|flatpak|chromium-scale) ./install.sh --uninstall $dry ;;
     pwvol|bluetooth)
       local n=wm$id

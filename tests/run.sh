@@ -42,5 +42,17 @@ check "remove works" run remove xterm focus shade-all omarchy --yes
 [ "$(grep -c selectToClipboard "$H/.Xresources" 2>/dev/null)" = 0 ] && ok "removed block is gone" || bad "xterm block still there"
 check "unknown item is refused" bash -c "$(declare -f run); H='$H'; ROOT='$ROOT'; ! run install nonsense --yes"
 
+echo "fixed-nerd font path reaches ~/.xsessionrc (stub repository, scratch home)"
+S=$(mktemp -d); mkdir -p "$S/fixed-nerd.git" && ( cd "$S/fixed-nerd.git" && printf '#!/bin/sh\nexit 0\n' > install.sh && chmod +x install.sh &&
+  git init -q && git add . && git -c user.name=t -c user.email=t@example.invalid commit -qm stub )
+X=$(mktemp -d); printf '# user line\nexport FOO=1\n' > "$X/.xsessionrc"
+xrun() { env -u DISPLAY HOME="$X" XDG_CONFIG_HOME= XDG_DATA_HOME= XDG_CACHE_HOME= WMC_REPO_BASE="$S" bash "$ROOT/install.sh" "$@" --no-sudo --no-self-update; }
+xrun install fixed-nerd --yes >/dev/null 2>&1; a=$(sha256sum "$X/.xsessionrc")
+grep -q 'wmodern:fixed-nerd' "$X/.xsessionrc" && grep -q 'xset +fp' "$X/.xsessionrc" && grep -q 'FOO=1' "$X/.xsessionrc" && ok "font path block added, user lines kept" || bad "xsessionrc block missing"
+xrun install fixed-nerd --yes >/dev/null 2>&1; [ "$a" = "$(sha256sum "$X/.xsessionrc")" ] && ok "re-install leaves ~/.xsessionrc unchanged" || bad "~/.xsessionrc changed on re-install"
+sh -n "$X/.xsessionrc" && ok "~/.xsessionrc is valid shell" || bad "~/.xsessionrc has a syntax error"
+xrun remove fixed-nerd --yes >/dev/null 2>&1; ! grep -q 'fixed-nerd' "$X/.xsessionrc" && grep -q 'FOO=1' "$X/.xsessionrc" && ok "remove takes the block out again" || bad "block left behind after remove"
+rm -rf "$S" "$X"
+
 echo
 [ "$FAIL" = 0 ] && echo "all tests passed" || { echo "SOME TESTS FAILED"; exit 1; }
