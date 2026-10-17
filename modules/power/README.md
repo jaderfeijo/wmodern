@@ -6,6 +6,9 @@ Press the laptop's power button and Window Maker's own shutdown dialog (`wmlive-
 again to close the menu. Without this, systemd's default on a window manager is to power the machine off the moment
 you touch the button.
 
+**A very quick tap may do nothing.** On some machines the firmware only reports the press after the button has been held
+for a short moment (about half a second on mine). It is not configurable from software; see item 7 below.
+
 Tested on a Lenovo ThinkPad with Debian 13, systemd, GDM and a Window Maker X11 session. The menu runs `systemctl` and
 `loginctl`, so it should work on any systemd distribution; the log-out entry is Window Maker specific.
 
@@ -59,8 +62,13 @@ Needs `rofi` and `acpid` (`sudo apt install rofi acpid`).
    `POWER_MENU_LOGOUT='your command'`.
 6. **Don't kill your own shell when testing.** `pkill -f power-menu-listener` also matches the command line of the
    shell you type it in. The listener keeps a pid file and replaces its previous copy by itself, so you do not need to.
-7. **The button seems to need a short hold on some machines.** The software side adds about 25 ms after the event
-   arrives; if the delay you feel is before the event shows up in `acpi_listen`, it is the firmware.
+7. **A very quick tap can do nothing; a deliberate press of about half a second works.** The firmware or embedded
+   controller decides whether a press counts, before the kernel sees any key, so there is no hold interval to set
+   here. After the event arrives the software adds about 25 ms, plus the 400 ms de-bounce of item 1. To tell the two
+   apart, run `sudo timeout 15 od -An -tx1 -w24 /dev/input/event6` (use the event device of "Power Button" in
+   `/proc/bus/input/devices`) and press the button: no output means the firmware never delivered the press. A BIOS/UEFI
+   option for the button may exist; I have not found one on my machine. Do not hold it for about four seconds, which
+   forces the machine off in hardware.
 
 ## Settings
 
