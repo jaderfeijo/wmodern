@@ -43,7 +43,7 @@ To look first: add `-s -- --dry-run` after `bash`, or read [`install.sh`](instal
 | [`thinkpad`](modules/thinkpad) | **Lenovo ThinkPad keys**: brightness, volume, mute and microphone-mute with an on-screen bar, mute LEDs, tap-to-click for the touchpad. |
 | [`power`](modules/power) | **Power-button menu** (lock, suspend, log out, restart, shut down) through `acpid` and rofi. |
 | [`lock`](modules/lock) | **Lock on suspend** and on `loginctl lock-session`, with `xss-lock` and `i3lock`. |
-| [`xterm`](modules/xterm) | **xterm clipboard** that works (Ctrl+Shift+C/V, Super+C/V, OSC 52) and an optional text scale (`Xft.dpi`), with the custom-window-class trap explained. |
+| [`xterm`](modules/xterm) | **xterm clipboard** that works (Ctrl+Shift+C/V, Super+C/V, OSC 52), **Ctrl+click on a link** (opens in Chromium on the current desktop), the xterm menu on right click, and an optional text scale (`Xft.dpi`), with the custom-window-class trap explained. |
 | [`caps-lock`](modules/caps-lock) | **Normal Caps Lock**: Debian's Window Maker turns Caps Lock into the Compose key at every login; this removes `compose:caps` for good (and only that option) and switches Debian's startup script off. |
 | [`no-welcome`](modules/no-welcome) | **No welcome window**: switches off the welcome window Debian's Window Maker live packages show at every login (moved to `AutoStart/Disabled`, nothing deleted). |
 | [`quiet-move`](modules/quiet-move) | **No move tooltip**: hides the position box Window Maker shows in the corner while you drag a window (`MoveDisplay = none`). |
@@ -51,6 +51,7 @@ To look first: add `-s -- --dry-run` after `bash`, or read [`install.sh`](instal
 | [`window-keys`](modules/window-keys) | **Super+Q and resize keys**: Super+Q closes the window, also the highlighted one in the Super+Tab switcher; Super+Shift+Alt `+`/`-` resize it around its centre (Control for bigger steps). |
 | [`fixed-nerd`](https://github.com/jaderfeijo/fixed-nerd) | **Fixed Nerd font**: the classic X11 `fixed` 6x13 bitmap font extended with Powerline, Nerd Font icons and the symbols coding TUIs (Claude Code, lazygit, btop, ...) use, as the default font of xterm and uxterm. |
 | [`webapp`](modules/webapp) | **Web apps**: `webapp add NAME URL` makes a launcher entry that opens a site in a tab-less Chromium window. |
+| [`default-browser`](modules/default-browser) | **Chromium as the default browser** in all three places a link can look (`xdg-settings`, the Xfce helper, the `x-www-browser` alternative); remove restores the old values. |
 | [`chromium-scale`](modules/chromium-scale) | **Smaller Chromium**: its interface and every web page at 80% (20% smaller than stock) with `--force-device-scale-factor`, through the launcher; any value from 25 to 300. |
 | [`flatpak`](modules/flatpak) | **Flatpak in the session**: launcher visibility and `slack://`-style sign-in links. |
 | [`omarchy`](modules/omarchy) | **Omarchy ports**: Omarchy's web-app and TUI launcher installers (unmodified), a searchable web-app catalog and fzf pickers for apt and Flatpak, adapted to Window Maker. |

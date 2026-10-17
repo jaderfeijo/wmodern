@@ -38,7 +38,7 @@ CATALOGUE=(
 "thinkpad|module|thinkpad|xbindkeys brightnessctl dunst libnotify-bin wireplumber xinput|ThinkPad keys|Brightness, volume, mute and mic-mute keys with an on-screen bar, plus touchpad tap-to-click. For Lenovo ThinkPads."
 "power|module|power|rofi acpid python3|Power-button menu|The power button opens a menu: lock, suspend, log out, restart, shut down. Needs sudo for a few files in /etc."
 "lock|module|lock|xss-lock i3lock python3|Lock on suspend|The screen locks before the machine sleeps and on 'loginctl lock-session' (xss-lock + i3lock)."
-"xterm|module|xterm|python3 x11-xserver-utils|xterm clipboard|xterm shares the CLIPBOARD: Ctrl+Shift+C/V, Super+C/V, OSC 52. Leaves your text scale alone."
+"xterm|module|xterm|python3 x11-xserver-utils xdotool x11-utils|xterm clipboard and links|xterm shares the CLIPBOARD: Ctrl+Shift+C/V, Super+C/V, OSC 52. Ctrl+click opens a link in Chromium on the current desktop (new tab if one is there, else a new window); the main menu moves to right click. Leaves your text scale alone."
 "caps-lock|module|caps-lock|python3 x11-xkb-utils|Normal Caps Lock|Debian's Window Maker turns Caps Lock into the Compose key at every login; this takes that off again, for good, and keeps your other keyboard options."
 "no-welcome|module|no-welcome|python3|No welcome window|Switches off the welcome window that Debian's Window Maker live packages show at every login (moved to AutoStart/Disabled; undone by remove)."
 "window-keys|module|window-keys|wmctrl x11-utils xbindkeys python3|Super+Q and resize keys|Super+Q closes the window (also the highlighted one in the Super+Tab switcher); Super+Shift+Alt +/- resize around the centre and Super+Shift+Alt+arrows move it; add Control for big steps."
@@ -47,6 +47,7 @@ CATALOGUE=(
 "fixed-nerd|repo|fixed-nerd|xfonts-utils x11-xserver-utils python3|Fixed Nerd font|The classic X11 'fixed' 6x13 font with Powerline and Nerd Font icons and TUI symbols, as the default font of xterm and uxterm. Used by new terminals."
 "webapp|module|webapp|curl file chromium|Web apps (Chromium)|The 'webapp' command: turn a website into a launcher entry that opens in a tab-less Chromium window."
 "chromium-scale|module|chromium-scale|chromium python3|Smaller Chromium|Chromium's own interface and every web page at 80% (20% smaller than stock), through its launcher. Quit Chromium and start it again."
+"default-browser|module|default-browser|xdg-utils chromium|Chromium as default browser|Links open in Chromium everywhere: xdg-settings, the Xfce helper and the x-www-browser alternative (sudo). Remove puts the old values back."
 "flatpak|module|flatpak|flatpak xdg-utils python3|Flatpak in the session|The 'flatpak-wm' command; makes Flatpak apps and slack:// style sign-in links work, for future logins."
 "pwvol|repo|wmpwvol|python3-cairo pipewire-bin wireplumber|Volume dockapp|PipeWire volume dockapp: live meter, mute, scroll to change. Drag its icon into the Dock once."
 "bluetooth|repo|wmbluetooth|python3-cairo python3-gi bluez rofi|Bluetooth dockapp|Connected Bluetooth devices and their batteries; click to connect. Drag its icon into the Dock once."
@@ -197,6 +198,7 @@ do_install() {  # runs inside the component's checkout
     fixed-nerd) ./install.sh --no-apply $dry; fixed_nerd_fontpath add ;;
     webapp)     ./install.sh $dry ;;
     chromium-scale) ./install.sh $dry ;;
+    default-browser) local extra=(); [ "$SUDO_OK" = 1 ] || extra+=(--no-system); ./install.sh $dry "${extra[@]}" ;;
     flatpak)    ./install.sh $dry; if [ "$DRY" = 1 ]; then say "  [dry-run] flatpak-wm fix"; else "$BIN/flatpak-wm" fix; fi ;;
     pwvol|bluetooth)
       if [ "$DRY" = 1 ]; then say "  [dry-run] make install PREFIX=\$HOME/.local   (and add $id to the Window Maker autostart file)"
@@ -226,6 +228,7 @@ do_remove() {
     workspace-name) ./install.sh --uninstall $dry ;;
     fixed-nerd) ./install.sh --uninstall --no-apply $dry; fixed_nerd_fontpath remove ;;
     webapp|flatpak|chromium-scale) ./install.sh --uninstall $dry ;;
+    default-browser) local extra=(); [ "$SUDO_OK" = 1 ] || extra+=(--no-system); ./install.sh --uninstall $dry "${extra[@]}" ;;
     pwvol|bluetooth)
       local n=wm$id
       if [ "$DRY" = 1 ]; then say "  [dry-run] make uninstall"; else make uninstall PREFIX="${PREFIX:-$HOME/.local}"; fi
